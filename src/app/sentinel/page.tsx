@@ -17,7 +17,7 @@ export default function TheBrief(){
     <div className="desk-signifier"><i/>THE RESEARCH DESK FOR TOKENIZED STOCKS</div>
     <h1>A share closes.<br/><em>Its token doesn’t.</em></h1>
     <p>The market you follow and the instrument you buy are not the same thing. Sentinel makes the difference legible — before you put a basket together.</p>
-    <div className="desk-home-actions"><Link className="desk-button-ink" href="/sentinel/markets">Explore the market <ArrowUpRight size={17}/></Link><Link href="/sentinel/baskets" className="desk-text-link">Build an allocation <ArrowRight size={16}/></Link></div>
+    <div className="desk-home-actions"><Link className="desk-button-accent" href="/sentinel/demo">See the product in three moves <ArrowUpRight size={17}/></Link><Link href="/sentinel/markets" className="desk-text-link">Explore the market <ArrowRight size={16}/></Link></div>
     <p className="desk-trust-note"><span/> Onchain observations, issuer terms, execution checks. Never hypothetical fills.</p>
    </div>
    <div className="desk-home-specimen">

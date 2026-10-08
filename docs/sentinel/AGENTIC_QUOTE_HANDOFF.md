@@ -1,6 +1,6 @@
 # Sentinel × Binance Agentic Wallet — local quote handoff
 
-**Integration status (October 8, 2026):** Sentinel already serves verified real signed Binance Web3 market inventory (488 BSC contracts, 448 stock tickers) and hosted SWAP quote-only requests. The official Agentic Wallet CLI was paired locally before. **No successful live Agentic Wallet CLI quote has yet been verified.** This milestone adds a local-only, user-operated handoff and a comparison UI.
+**Integration status (October 8, 2026):** Sentinel already serves verified real signed Binance Web3 market inventory (488 BSC contracts, 448 stock tickers) and hosted SWAP quote-only requests. The official Agentic Wallet CLI was paired locally before. **An owner-operated live Agentic Wallet CLI quote succeeded October 8, 2026.** The quote was sanitized locally and imported into the comparison UI. The simultaneous fresh comparison with the hosted Binance Web3 quote was **not completed before the local quote's two-minute expiration**, so no live divergence percentage is claimed. The local-only, user-operated architecture remains unchanged.
 
 ## What this does
 
@@ -37,7 +37,7 @@ It displays the saved local JSON file path. Import that file with the dossier's 
 - The agentic quote's quantity and the hosted Binance Web3 route's quantity may differ due to routing, fees, slippage and timing. The comparison is information only.
 - If the owner has tradeAllTokens=false or other restrictions, a particular quote may be rejected; the integration never changes wallet settings or silently attempts another command.
 - The hosted public website never executes the CLI. The local sanitizer never invokes Binance Wallet itself, and never signs, swaps, broadcasts or approves a transaction.
-- No *successful live Agentic Wallet quote* has been claimed here until the owner executes and independently validates the local procedure. Test fixtures below are synthetic, not real wallet quotes.
+- The owner has now executed the live Agentic Wallet CLI quote command, and we verified the resulting sanitized local JSON on the device. The file itself is not cryptographic proof that Binance issued it. Browser comparison unit tests and earlier browser fixtures remain synthetic and must not be described as live wallet results.
 
 ## Offline tests
 

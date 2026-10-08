@@ -20,7 +20,7 @@
 | Local adapter tests | **4 passed, 0 failed** |
 | GitHub CI (Node 22) | **Passed**, including read-only adapter tests: https://github.com/ShalyX/synthabasket/actions/runs/37755791315 |
 
-Verification does **not** include balances, account eligibility, successful quote execution, onchain trades, approvals, EIP-712 signing, Agent Studio runtime, or automatic order placement. No raw wallet addresses, credentials, pairing QR IDs, sign-in tokens or private key material are committed.
+Verification now **includes one owner-operated, read-only Agentic Wallet CLI quote and the local sanitizer output**. It does **not** include balances, account eligibility, quote attestation, onchain trades, approvals, EIP-712 signing, Agent Studio runtime, or automatic order placement. No raw wallet addresses, credentials, pairing QR IDs, sign-in tokens or private key material are committed.
 
 ## Safe adapter interface
 

@@ -4,7 +4,7 @@ import {usePathname} from 'next/navigation';
 import {ArrowUpRight,Check,Menu,RefreshCw,X} from 'lucide-react';
 import {useState} from 'react';
 import {DeskProvider,useDesk} from './DeskContext';
-const LINKS=[{href:'/sentinel',name:'The Brief',no:'01'},{href:'/sentinel/markets',name:'Market Index',no:'02'},{href:'/sentinel/baskets',name:'Basket Studio',no:'03'},{href:'/sentinel/review',name:'Execution Review',no:'04'}];
+const LINKS=[{href:'/sentinel',name:'The Brief',no:'01'},{href:'/sentinel/demo',name:'Guided Demo',no:'02'},{href:'/sentinel/markets',name:'Market Index',no:'03'},{href:'/sentinel/baskets',name:'Basket Studio',no:'04'},{href:'/sentinel/review',name:'Execution Review',no:'05'}];
 function Shell({children}:{children:React.ReactNode}){
  const path=usePathname();
  const {feed,error,refresh,snapshot,basket}=useDesk();
@@ -39,7 +39,7 @@ function Shell({children}:{children:React.ReactNode}){
   <main>{children}</main>
   <footer className="desk-footer"><div className="desk-wrap desk-footer-inner">
    <div><span className="desk-footer-logo">S / SENTINEL</span><p>Price discovery is a decision process. This research tool never signs or submits orders.</p></div>
-   <div className="desk-footer-links"><span>{snapshot?.count??'—'} verified BSC contracts {snapshot&&feed==='live'?'· LIVE':'· NOT LIVE'}</span><a href="https://github.com/ShalyX/synthabasket-sentinel" target="_blank" rel="noreferrer">Source code <ArrowUpRight size={13}/></a><Link href="/sentinel/markets">Market index <ArrowUpRight size={13}/></Link></div>
+   <div className="desk-footer-links"><span>{snapshot?.count??'—'} verified BSC contracts {snapshot&&feed==='live'?'· LIVE':'· NOT LIVE'}</span><a href="https://github.com/ShalyX/synthabasket-sentinel" target="_blank" rel="noreferrer">Source code <ArrowUpRight size={13}/></a><Link href="/sentinel/demo">Guided demo <ArrowUpRight size={13}/></Link><Link href="/sentinel/markets">Market index <ArrowUpRight size={13}/></Link></div>
   </div></footer>
  </div>;
 }
