@@ -68,3 +68,13 @@ The quote endpoint validates real Binance BSC inventory and requests a signed up
 **Nothing signed, approved, swapped, submitted or transferred**. A live Binance Agentic Wallet CLI quote is still a separate, unverified integration.
 
 Vercel source now pins the sole function region as Singapore (sin1) in standalone vercel.json, and CI includes a region-contract test; post-deployment region metadata and response headers remain the runtime authority.
+
+## Local Agentic quote handoff UI QA — October 8, 2026
+
+**Test status: PASS, synthetic local observation; real Binance Web3 venue quote.**
+- Deployed NVDA dossier loaded the new "Two quote engines. Zero wallet access." panel and a quote-only command for the live bStocks contract.
+- Verified the displayed command contains "market-order quote" and does **not** contain "market-order swap".
+- Imported an explicitly **synthetic QA fixture** through the local JSON file selector. It rendered as USER-SUPPLIED OBSERVATION; no wallet, quote ID, session or transaction data was involved.
+- Triggered the site's actual **read-only hosted $10 venue quote** on Binance Web3. Client rendered a second quote and an indicative comparison, with no error banner.
+- Real 390px Chrome mobile emulation measured viewport width **390** and document scroll width **390** (no horizontal overflow).
+- The browser QA used simulated *local* Agentic evidence. **No live Agentic Wallet CLI quote was run or claimed**. The user-operated command remains the next independent verification step.

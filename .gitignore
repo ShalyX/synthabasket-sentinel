@@ -29,3 +29,4 @@ runner-keypair.json
 .vscode/
 .idea/
 LEARNINGS.md
+*.tsbuildinfo

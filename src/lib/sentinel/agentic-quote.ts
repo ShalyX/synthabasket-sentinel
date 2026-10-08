@@ -70,14 +70,15 @@ export function compareAgenticQuote(
   token.address.toLowerCase()!==local.targetToken||token.symbol.toLowerCase()!==local.tokenSymbol.toLowerCase())
   return {...base,state:'invalid-instrument'};
  const age=now-Date.parse(local.observedAt);
- if(!Number.isFinite(age)||age<0||age>120000)return {...base,state:'stale-local'};
+ // Allow one UI refresh tick of clock skew when a file is generated after the page mounted.
+ if(!Number.isFinite(age)||age<= -1000||age>120000)return {...base,state:'stale-local'};
  if(!venue)return {...base,state:'venue-missing'};
  if(venue.ticker!==local.ticker||venue.platform!==local.platform||
    venue.address.toLowerCase()!==local.targetToken||
    Math.abs(venue.amountUsd-local.amountUsd)>0.000001)
   return {...base,state:'invalid-instrument'};
  const webAge=now-Date.parse(venue.checkedAt);
- if(!Number.isFinite(webAge)||webAge<0||webAge>30000)return {...base,state:'venue-expired'};
+ if(!Number.isFinite(webAge)||webAge<= -1000||webAge>30000)return {...base,state:'venue-expired'};
  const venueAmount=venue.tokenAmount;
  if(!Number.isFinite(venueAmount)||venueAmount<=0)return {...base,state:'venue-missing'};
  return {state:'ready',localAmount,venueAmount,
