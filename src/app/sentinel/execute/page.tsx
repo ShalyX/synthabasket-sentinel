@@ -8,6 +8,7 @@ import {useDesk} from '@/components/sentinel/DeskContext';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
 import {amountFor} from '@/lib/sentinel/basket';
 import {formatUsd} from '@/lib/sentinel/model';
+import {preflightHeadline,requiresFundingReadout} from '@/lib/sentinel/preflight-presentation';
 import {
  SIMULATION_MAX_LEG_USDT,SIMULATION_MAX_BASKET_USDT,validAddress
 } from '@/lib/sentinel/execution-preflight';
@@ -125,15 +126,16 @@ export default function ExecutionLab(){
   const id=window.setInterval(()=>setNowMs(Date.now()),1000);
   return()=>window.clearInterval(id);
  },[]);
- async function checkBalances(){
-  if(checkingBalances||!addressOK||!budgetOK)return;
+ async function checkBalances(gasOverride?:string|null){
+  if(!addressOK||!budgetOK)return;
   const key=operationKey;
+  fundingAbort.current?.abort();
   const controller=new AbortController();
   fundingAbort.current=controller;
   setCheckingBalances(true);setBalanceError(null);setBalanceCheck(null);
   try{
    const walletAddress=receiver.trim();
-   const gasLimit=latestBuiltGas;
+   const gasLimit=gasOverride===undefined?latestBuiltGas:gasOverride;
    const response=await fetch('/api/sentinel/wallet-readiness',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({walletAddress,amountUsd:total,gasLimit}),
@@ -147,7 +149,7 @@ export default function ExecutionLab(){
   }catch(error){
    if(!controller.signal.aborted&&currentOperation.current===key)setBalanceError(error instanceof Error&&error.name!=='TimeoutError'?
     error.message:'BSC balance check timed out; balances remain unknown.');
-  }finally{if(fundingAbort.current===controller)fundingAbort.current=null;setCheckingBalances(false);}
+  }finally{if(fundingAbort.current===controller){fundingAbort.current=null;setCheckingBalances(false);}}
  }
  async function runSimulation(){
   if(runRef.current||issue||!wallet.ready)return;
@@ -179,7 +181,12 @@ export default function ExecutionLab(){
      history[history.length-1]={ticker:leg.ticker,status:passed?'pass':'blocked',receipt,
       reason:passed?undefined:receipt.simulation.reason||'The simulation did not pass.'};
      setObservations([...history]);
-     if(!passed)break; // fail closed; no later leg is attempted after a blocked one.
+     if(!passed){
+      // A simulation-only funding check follows a reported balance/gas failure;
+      // no second user action, allowance request, signature or transaction.
+      if(requiresFundingReadout(passed,receipt.simulation.reason))void checkBalances(receipt.gasLimit);
+      break;
+     } // fail closed; no later leg is attempted after a blocked one.
     }catch(e){
      if(controller.signal.aborted||currentOperation.current!==key)break;
      history[history.length-1]={ticker:leg.ticker,status:'blocked',
@@ -201,7 +208,7 @@ export default function ExecutionLab(){
   <div className="desk-sim-band"><span>BNB SMART CHAIN · MAINNET 56</span><span>USDT → VERIFIED ISSUER TOKEN</span><span>NO EXECUTION</span></div>
   <div className="desk-sim-layout">
    <section className="desk-sim-primary" aria-label="Execution simulation evidence">
-    <div className="desk-sim-heading"><div><span>01 / SELECTED BASKET</span><h2>Every leg gets<br/><em>its own rehearsal.</em></h2></div><div className="desk-sim-budget"><span>PROPOSED TOTAL</span><strong>{formatUsd(total)}</strong><small>{legs.length} issuer-backed legs</small></div></div>
+    <div className="desk-sim-heading"><div><span>01 / SELECTED BASKET</span><h2>Every leg gets<br/><em>its own rehearsal.</em></h2></div><div className="desk-sim-budget"><span>PROPOSED TOTAL</span><strong>{formatUsd(total)}</strong><small>{legs.length} issuer-backed {legs.length===1?'leg':'legs'}</small></div></div>
     {legs.length===0&&<BlankState title="No basket instruction yet." description="The simulator does not invent a basket. Select actual BSC stock tokens first." action={<Link href="/sentinel/baskets" className="desk-button-ink">Build a basket <ArrowRight size={16}/></Link>}/>}
     <div className="desk-sim-list">
      {legs.map((leg,i)=>{
@@ -231,7 +238,7 @@ export default function ExecutionLab(){
         <div><span>ALLOWANCE CHANGES</span><strong>{data.simulation.allowanceChangeCount}</strong></div>
         <div><span>QUOTE VALID UNTIL</span><strong>{expiry(data.expiresAt)} · result is a time-bound simulation</strong></div>
        </div>}
-       {observation?.status==='blocked'&&<p className="desk-sim-failure" role="alert"><XCircle size={16}/>{observation.reason||'Simulation blocked. No trade was submitted.'}</p>}
+       {observation?.status==='blocked'&&<p className="desk-sim-failure" role="alert"><XCircle size={16}/>{observation.reason||'Simulation blocked. No trade was submitted.'}{data&&Date.parse(data.expiresAt)<=nowMs?' · Quote expired after the failed preflight.':''}</p>}
        {observation?.status==='pass'&&<p className="desk-sim-okay"><CheckCircle2 size={17}/> {data&&Date.parse(data.expiresAt)<=nowMs?
         'This simulation has expired and cannot be reused. Run it again with a fresh quote.':
         'Transaction API predicted success. No wallet permission or real execution occurred.'}</p>}
@@ -240,10 +247,10 @@ export default function ExecutionLab(){
     </div>
     <div className={'desk-sim-final '+(complete?'complete':blocked?'blocked':'pending')}>
      {complete?<ShieldCheck size={28}/>:blocked?<TriangleAlert size={28}/>:<Clock3 size={28}/>}
-     <div><strong>{complete?'ALL SELECTED LEGS SIMULATED · ZERO TRADES':expired?'QUOTE EXPIRED · NEW SIMULATION REQUIRED':blocked?'PREFLIGHT STOPPED · NO TRADE SENT':'AWAITING AN EXPLICIT SIMULATION'}</strong>
+     <div><strong>{preflightHeadline({complete,blocked,expired})}</strong>
       <p>{complete?'Each issuer-specific transaction was built and simulated from a live quote. This is predicted execution only, not a wallet approval, a position or an onchain receipt.':
+       blocked?'The simulator reported a failed transaction. Review the specific reason above; a funding-related failure triggers a separate read-only wallet diagnostic below. '+(expired?'The quote has also expired, so a future attempt requires a new quote.':'No transaction was signed or sent.'):
        expired?'One or more quote windows have elapsed. Archived results are reference-only; simulate again with fresh quotes and the active connected wallet.':
-       blocked?'The pipeline stopped at the first blocked leg. Check funding, allowance, gas, route constraints or expiry and re-run after making a user-approved change.':
        'The official simulation endpoint receives genuine unsigned BSC transaction calldata only when you initiate this read-only test.'}</p>
      </div>
     </div>
@@ -287,7 +294,7 @@ export default function ExecutionLab(){
     </div>
     <section className="desk-sim-funding" aria-label="Read-only wallet funding check">
      <div className="desk-sim-funding-head">
-      <div><strong>03 / ONCHAIN FUNDING DIAGNOSTIC</strong><p>Read public balances for the connected BSC account. No signing or unlocking required.</p></div>
+      <div><strong>03 / ONCHAIN FUNDING DIAGNOSTIC</strong><p>Read public balances for the connected BSC account. Funding-related simulation failures automatically refresh this diagnostic. No signatures required.</p></div>
       <button type="button" onClick={()=>void checkBalances()}
        disabled={checkingBalances||running||!addressOK||!budgetOK}>
        {checkingBalances?'CHECKING…':currentBalanceCheck?'Refresh funding check':'Check BSC balances & gas'}
