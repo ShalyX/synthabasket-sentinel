@@ -42,6 +42,21 @@ interface SimulatedLeg {
  broadcastRequested:false;
 }
 type Observation={ticker:string;status:'running'|'pass'|'blocked';receipt?:SimulatedLeg;reason?:string};
+interface WalletBalances {
+ kind:'sentinel.bsc.readonly-wallet-balances';
+ chainId:56;
+ bnbBalance:string;
+ usdtBalance:string;
+ bnbPresent:boolean;
+ usdtCoversAmount:boolean;
+ checkedAmountUsd:number;
+ checkedAt:string;
+ allowanceChecked:false;
+ gasAdequacyChecked:false;
+ noTransactions:true;
+}
+type BalanceCheck={walletAddress:string;amountUsd:number;data:WalletBalances};
+
 const fmt=(n:number|null,d=8)=>n==null?'—':n.toLocaleString('en-US',{maximumFractionDigits:d});
 const expiry=(raw:string)=>new Date(raw).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
@@ -51,6 +66,9 @@ export default function ExecutionLab(){
  const [budget,setBudget]=useState(25),[receiver,setReceiver]=useState('');
  const [running,setRunning]=useState(false),[observations,setObservations]=useState<Observation[]>([]);
  const [runId,setRunId]=useState(0);
+ const [checkingBalances,setCheckingBalances]=useState(false);
+ const [balanceCheck,setBalanceCheck]=useState<BalanceCheck|null>(null);
+ const [balanceError,setBalanceError]=useState<string|null>(null);
  const runRef=useRef(false);
  const legs=basket.map(b=>({...b,amountUsd:amountFor(budget,b),
   token:snapshot?.tokens.find(x=>x.ticker===b.ticker&&x.platform===b.platform)}));
@@ -68,6 +86,27 @@ export default function ExecutionLab(){
   !addressOK?'Enter a valid public BSC sender address (0x followed by 40 hex characters).':null;
  const complete=observations.length===legs.length&&observations.length>0&&observations.every(x=>x.status==='pass');
  const blocked=observations.some(x=>x.status==='blocked');
+ const currentBalanceCheck=balanceCheck&&balanceCheck.walletAddress===receiver.trim()&&balanceCheck.amountUsd===total?
+  balanceCheck.data:null;
+ async function checkBalances(){
+  if(checkingBalances||!addressOK||!budgetOK)return;
+  setCheckingBalances(true);setBalanceError(null);setBalanceCheck(null);
+  try{
+   const walletAddress=receiver.trim();
+   const response=await fetch('/api/sentinel/wallet-readiness',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({walletAddress,amountUsd:total}),
+    cache:'no-store',signal:AbortSignal.timeout(11000)
+   });
+   const data=await response.json();
+   if(!response.ok||data.kind!=='sentinel.bsc.readonly-wallet-balances')
+    throw new Error(typeof data.error==='string'?data.error:'Could not verify balances on BSC mainnet.');
+   setBalanceCheck({walletAddress,amountUsd:total,data:data as WalletBalances});
+  }catch(error){
+   setBalanceError(error instanceof Error&&error.name!=='TimeoutError'?
+    error.message:'BSC balance check timed out; balances remain unknown.');
+  }finally{setCheckingBalances(false);}
+ }
  async function runSimulation(){
   if(runRef.current||issue)return;
   runRef.current=true;setRunning(true);setObservations([]);setRunId(n=>n+1);
@@ -190,6 +229,26 @@ export default function ExecutionLab(){
       <div><strong>Public BSC sender address</strong><small>{addressOK?'Format verified · no wallet connection or signature required':'Enter a valid 0x address in the field above'}</small></div>
      </div>
     </div>
+    <section className="desk-sim-funding" aria-label="Read-only wallet funding check">
+     <div className="desk-sim-funding-head">
+      <div><strong>03 / ONCHAIN FUNDING DIAGNOSTIC</strong><p>Check public BSC balances without connecting or unlocking a wallet.</p></div>
+      <button type="button" onClick={()=>void checkBalances()}
+       disabled={checkingBalances||running||!addressOK||!budgetOK}>
+       {checkingBalances?'CHECKING…':currentBalanceCheck?'Refresh balances':'Check BSC balances'}
+       <RefreshCw size={14} className={checkingBalances?'desk-spin':undefined}/>
+      </button>
+     </div>
+     {balanceError&&<p className="desk-sim-funding-error" role="status">{balanceError} No balances were assumed.</p>}
+     {currentBalanceCheck&&<div className="desk-sim-funding-results" aria-live="polite">
+      <div><span>USDT / BSC</span><strong>{currentBalanceCheck.usdtBalance}</strong>
+       <small className={currentBalanceCheck.usdtCoversAmount?'sufficient':'missing'}>{currentBalanceCheck.usdtCoversAmount?
+        'Covers the proposed basket amount':'Below the proposed basket amount'}</small></div>
+      <div><span>BNB / GAS TOKEN</span><strong>{currentBalanceCheck.bnbBalance}</strong>
+       <small className={currentBalanceCheck.bnbPresent?'sufficient':'missing'}>{currentBalanceCheck.bnbPresent?
+        'Present · gas sufficiency not verified':'Zero balance · no BNB available for gas'}</small></div>
+      <p>Read-only BSC mainnet snapshot checked at {new Date(currentBalanceCheck.checkedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. Token allowance and actual gas cost are <b>not</b> checked. A positive balance is not an execution approval.</p>
+     </div>}
+    </section>
     <div className="desk-sim-rails"><div><span>CHAIN</span><strong>BSC / 56</strong></div><div><span>INPUT TOKEN</span><strong>USDT / 18 DECIMALS</strong></div><div><span>MAX PER LEG</span><strong>$25 USDT</strong></div><div><span>MAX BASKET</span><strong>$50 USDT</strong></div><div><span>SLIPPAGE LIMIT</span><strong>0.50%</strong></div><div><span>PRICE IMPACT LIMIT</span><strong>2.00%</strong></div><div><span>SUPPORTED PATH</span><strong>LIQUIDMESH SWAP</strong></div></div>
     <button type="button" className="desk-sim-run" onClick={()=>void runSimulation()} disabled={running||!!issue}>
      {running?<RefreshCw size={17} className="desk-spin"/>:<ShieldAlert size={18}/>}

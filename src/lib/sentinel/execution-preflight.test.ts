@@ -101,10 +101,14 @@ test('simulation PASS only for actual SUCCESS without revert or allowance increa
  assert.equal(good.reason,null);
  const insufficient=assessSimulation({...sample,status:'FAILED',failReason:'ERC20InsufficientAllowance'});
  assert.equal(insufficient.status,'BLOCKED');
- assert.equal(insufficient.reason,'Insufficient token allowance.');
+ assert.equal(insufficient.reason,'Insufficient token allowance for the proposed swap.');
  const badBalance=assessSimulation({...sample,status:'FAILED',failReason:'ERC20InsufficientBalance'});
  assert.equal(badBalance.status,'BLOCKED');
- assert.equal(badBalance.reason,'Insufficient token balance or BNB gas funds.');
+ assert.equal(badBalance.reason,'Insufficient ERC-20 token balance for this swap. Check the BSC USDT balance.');
+ const missingGas=assessSimulation({...sample,status:'FAILED',failReason:'insufficient funds for gas * price + value'});
+ assert.match(missingGas.reason||'',/BNB for gas/);
+ const ambiguous=assessSimulation({...sample,status:'FAILED',failReason:'insufficient balance'});
+ assert.match(ambiguous.reason||'',/check BSC USDT and BNB/);
  const weird=assessSimulation({...sample,status:'SUCCESS',failReason:'execution reverted: undocumented'});
  assert.equal(weird.status,'BLOCKED');
  const approval=assessSimulation({...sample,allowanceChanges:[{preAmount:'0',postAmount:'10000000'}]});

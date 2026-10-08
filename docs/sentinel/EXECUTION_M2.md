@@ -17,7 +17,9 @@ SIMULATION_PASSED means Binance Transaction API predicted success for the built 
 
 Historical direct technical spikes in ../BNB_RWA_OBSERVATIONS.md already confirmed real Binance quote/build/Transaction API transport. They returned simulator FAILED because the synthetic and the previously checked real public wallet lacked allowance or sufficient BSC USDT funds. This is an actual execution readiness blocker, not an error to hide.
 
-A fresh browser-run response through this newly shipped M2 API remains required before marking full integration verified. A funded, eligible, user-approved onchain swap receipt is a separate M4 milestone.
+**User-observed production browser verification, October 8, 2026:** One issuer-backed NVDA / bStocks basket leg ($25 BSC USDT) successfully traversed the live quote, built LiquidMesh SWAP calldata, and Binance Transaction API simulator. Quote returned 0.1079236 NVDAB at reported 0.0015% price impact; unsigned transaction calldata length was 5,092 bytes. The simulator returned **FAILED**, with a funding-related reason. No balance changes, allowances, signature, approval or broadcast were reported. This verifies real three-stage API integration, **not a successful execution simulation or onchain trade**. Public wallet address and calldata are intentionally omitted from these notes.
+
+**Follow-up:** An optional public BSC balance diagnostic separately checks USDT available toward the proposed total and whether BNB is present, without claiming sufficient gas or approved allowance. It returns unavailable rather than fabricating balances if the official BSC RPC cannot be reached. A funded, eligible, user-approved onchain swap receipt is a separate M4 milestone.
 
 ## Official API documentation
 

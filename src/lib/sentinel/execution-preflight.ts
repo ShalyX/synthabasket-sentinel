@@ -129,8 +129,13 @@ export function assessSimulation(raw:unknown):SimulationAssessment{
   if(BigInt(String(item.postAmount))>BigInt(String(item.preAmount)))unexpected=true;
  }
  const reason=failReason?
-  (/allowance/i.test(failReason)?'Insufficient token allowance.' :
-   /balance|insufficient funds/i.test(failReason)?'Insufficient token balance or BNB gas funds.' :
+  (/allowance/i.test(failReason)?'Insufficient token allowance for the proposed swap.' :
+   /ERC20InsufficientBalance|transfer amount exceeds balance|insufficient token balance/i.test(failReason)?
+    'Insufficient ERC-20 token balance for this swap. Check the BSC USDT balance.' :
+   /gas|intrinsic gas|insufficient funds for/i.test(failReason)?
+    'Insufficient BNB for gas or a gas-estimation failure. Check BSC BNB funding.' :
+   /balance|insufficient funds/i.test(failReason)?
+    'Insufficient funds reported; check BSC USDT and BNB balances separately.' :
    /revert|failed/i.test(failReason)?'The simulated transaction reverted.' :
    'Simulator reported a failure (details withheld for wallet privacy).'):null;
  if(reported==='SUCCESS'&&!reason&&!unexpected)
