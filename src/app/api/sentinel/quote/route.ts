@@ -28,8 +28,8 @@ export async function POST(req:NextRequest){
   const token=markets.tokens.find(t=>t.ticker===ticker&&t.platform===platform);
   if(!token)return NextResponse.json({error:'Token is not in the verified live BSC inventory.'},{status:404});
   if(token.tradingAvailable!==true)return NextResponse.json({error:'Issuer has not confirmed this token is open for trading.'},{status:409});
-  // RFQ venues for Ondo require a public receiving wallet. Do not call Binance
-  // with a known-incomplete quote request or silently inject an arbitrary address.
+  // The observed Ondo route returned SWAP once a public receiver was supplied.
+  // Avoid a known rejected no-address request; do not inject an arbitrary address.
   if(needsOndoAddress(token.platform,typeof walletAddress==='string'?walletAddress:''))
    return NextResponse.json({error:ONDO_PUBLIC_ADDRESS_REQUIRED,code:'PUBLIC_WALLET_REQUIRED',requiresWalletAddress:true},{status:422});
   const amount=(BigInt(Math.round(amountUsd*100))*10n**16n).toString();

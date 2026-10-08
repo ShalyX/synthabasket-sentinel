@@ -731,7 +731,7 @@
  .desk-agentic-values strong{font-size:21px}
 }
 
-/* RFQ receiving wallet address: intentionally public only, never a wallet connection. */
+/* Public quote receiver: Ondo may return SWAP or RFQ; never a wallet connection. */
 .desk-quote-receiver{display:grid;grid-template-columns:1.1fr 1fr;gap:25px;align-items:center;margin:36px 0 28px;padding:22px 24px;border:1px solid var(--line-heavy);background:#eef0e8}
 .desk-quote-receiver>div:first-child>span{font:720 10px var(--font-mono),monospace;letter-spacing:.11em;color:#93543f}
 .desk-quote-receiver>div:first-child>p{font-size:12px;line-height:1.75;color:#5e6f60;margin-top:12px;max-width:455px}

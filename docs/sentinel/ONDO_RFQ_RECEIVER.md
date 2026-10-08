@@ -1,36 +1,50 @@
-# Ondo RFQ receiving address — October 8, 2026
+# Ondo SWAP quote and public receiving address — October 8, 2026
 
-## Observed, not assumed
+## Problem and result
 
-The owner tested live NVDA issuer quote buttons on the Singapore-hosted Sentinel:
+Sentinel's standalone Singapore-hosted (sin1) NVDA dossier offers issuer-specific quotes for two different BSC token wrappers. On the first test, a read-only NVDAB (bStocks) LiquidMesh SWAP quote succeeded without a public wallet address, while an NVDAon (Ondo) quote returned Binance business code 40001 (parameter validation). Sentinel initially displayed only a generic Binance API failure.
 
-- **NVDAB (bStocks)**: actual BSC read-only aggregator quote returned a LiquidMesh `SWAP` route, with a small quoted NVDA output amount; no wallet address or transaction was needed for that quote.
-- **NVDAon (Ondo)**: Binance returned business code `40001` and Sentinel previously displayed only `Binance API request failed (code 40001)`. No Ondo quote was returned.
-- Both issuer inventory entries reported trading indicated. **This is not equivalent to an executable route or user eligibility.**
+After the owner provided a **public BSC receiving address** in Sentinel's revised quote form, an Ondo quote succeeded. The owner then reported these complete non-sensitive quote-screen values for two **$10 USDT** requests:
 
-## Official source interpretation
+| Field | bStocks — NVDAB | Ondo — NVDAon |
+|---|---|---|
+| Issuer | bStocks | Ondo Finance |
+| Route type | **SWAP** | **SWAP** |
+| Quote provider | LiquidMesh | LiquidMesh |
+| Token output for $10 USDT | **0.04223466 NVDAB** | **0.04220982 NVDAon** |
+| Reported price impact | 0.0000% | 0.0001% |
+| Observed token mark | $236.8442 | $237.3572 |
+| Token-to-share ratio | 1.000778 | 1.001715 |
+| Adjusted premium / discount | +0.00% (rounded) | +0.00% (rounded) |
+| Quote time remaining on screen | 18 seconds | 19 seconds |
 
-Binance Web3 API defines **40001** as request parameter validation (missing/invalid/out-of-range required field); it documents the specific cause in the upstream `msg` field. Sentinel's existing error wrapper did not expose that `msg`, so the exact missing parameter for this specific request was **not** independently verified.
+**Crucial: BOTH successful routes are SWAP, NOT RFQ.** The public receiving address was useful on the Ondo SWAP request in this observed session. Provider identity (Ondo vs. bStocks) does not determine the route mode (SWAP vs. RFQ).
 
-Binance documents `userWalletAddress` as **required when obtaining RFQ quotes**, including equity/RWA providers Ondo and BStock, because the RFQ's receiving wallet must match the one ultimately authorizing the order. By contrast, a regular non-RFQ SWAP quote can work without this field.
+## Cross-issuer comparison: normalize the wrapper
 
-Sources:
+Raw output shows **0.00002484 more bStocks tokens** for the same $10 input (roughly +0.05885% versus Ondo's token count). But wrapper conversion ratios differ:
+
+- bStocks implied share exposure: 0.04223466 × 1.000778 ≈ **0.04226752 underlying share units**.
+- Ondo implied share exposure: 0.04220982 × 1.001715 ≈ **0.04228221 underlying share units**.
+
+The wrapper-adjusted exposure is **roughly 0.03476% higher on Ondo**, despite the raw token count being lower. This is a basic indicative normalization, NOT a best-execution claim. The quotes have brief validity windows, impact values may be rounded, and fees, execution conditions, route/liquidity changes and issuer terms may differ.
+
+## What the earlier error means
+
+Binance code **40001** is a request-parameter validation error. Binance's documentation says a public receiving address may be needed by RWA/RFQ quote routes. The earlier no-address Ondo request was rejected, while an address-supplied Ondo **SWAP** quote later succeeded. This strongly suggests a missing receiver parameter caused the earlier failure in that case; it does not establish that all Ondo SWAP routes require an address or that every wallet is eligible. The specific upstream message for the failed request was not captured.
+
+Source docs:
 - https://web3.binance.com/en/dev-docs/products/wallet-api/error-codes
-- https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/trading-api — Get Aggregated Quote
+- https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/trading-api
 
-## Mitigation
+## Product behavior
 
-- Moved the public BSC receiving-address input directly before the two issuer quote cards. The user provides it voluntarily; Sentinel never auto-fills or uses a random address.
-- For Ondo, preflight explains the public-address requirement instead of sending an incomplete RFQ request. This local validation returns HTTP 422 with code `PUBLIC_WALLET_REQUIRED`, clearly distinguishable from Binance's upstream numeric `40001`.
-- bStocks routes remain allowed without a public address when a regular SWAP quote is available.
-- A Binance upstream `40001` is now identified as parameter validation (HTTP 422) with a non-committal explanation. If an address was already supplied, the UI does **not** claim that missing-wallet is the cause; issuer/venue limits may still apply.
-- The Execution Review basket-side public wallet field likewise flags when a basket contains Ondo.
-- No addresses are stored in localStorage. The address is transmitted only during an explicit quote request, server-to-server Binance signing; no wallet API session, approvals, seed phrase, private key, contract write, execution request or transaction.
+- A public BSC quote-receiver field is shown **before** the issuer cards, not hidden below them.
+- Sentinel explains the observed Ondo requirement, including the fact that the result may be SWAP or RFQ. A missing Ondo receiver is rejected locally with an informative HTTP 422 rather than making another known-incomplete upstream call.
+- A bStocks regular SWAP quote can still be requested without an address.
+- A Binance business code 40001 now reports parameter-validation uncertainty, rather than implying a trade failure or inferring a precise error field not exposed by the upstream response.
+- A receiving address is sent only after an explicit quote request; no Binance Agentic Wallet session, seed phrase, private key, sign/approve request or trade is involved.
 
-## Owner-confirmed Ondo success — October 8, 2026
+## Evidence limits
 
-After the public BSC receiving-address field and clearer RFQ validation were deployed, the owner retried the Ondo issuer's **Inspect $10 quote** action on the live NVDA dossier and explicitly reported **"valid quote ✅"**. This is direct user acceptance-test feedback that the Ondo quote flow now returns a valid quote in their environment. The earlier no-address test returned Binance business code `40001`.
-
-**Evidence boundary:** the report confirms a successful read-only **Ondo** quote from the user's browser. The exact received token quantity, venue, response mode (`RFQ` or `SWAP`), slippage, timestamps and any RFQ eligibility conditions were **not supplied**, so none are asserted here. No wallet address is recorded in project docs. A quote does not prove regulatory eligibility or a completed purchase.
-
-**Next verification if needed:** capture only non-sensitive quote metadata (provider, execution mode, token quantity, expiry, and reported impact) from the live UI. Never paste wallet session tokens, seed phrases, private keys or signing requests. No trade was requested or executed in this test.
+The results above come directly from the owner's live Sentinel screen, not an independent machine-captured HTTP transcript of both responses. No wallet address, session identifier or private credential is retained in the project documentation. No trade or asset movement was executed. A successful quote does not establish user jurisdiction, eligibility, or a guaranteed execution price.

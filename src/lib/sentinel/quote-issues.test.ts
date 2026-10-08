@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {needsOndoAddress,ONDO_PUBLIC_ADDRESS_REQUIRED,publicWalletAddressValid,quoteBusinessError} from './quote-issues';
 
-test('Ondo RFQ request is blocked locally when public receiver is missing',()=>{
+test('Ondo quote request is blocked locally when public receiver is missing',()=>{
  assert.equal(needsOndoAddress('ondo',''),true);
  assert.equal(needsOndoAddress('ondo','   '),true);
  assert.equal(needsOndoAddress('bstock',''),false); // SWAP routes can quote wallet-free

@@ -1,10 +1,10 @@
 /**
  * Binance Web3 API business code 40001 means an invalid/missing request parameter.
- * RWA RFQ quotes require a public receiving wallet address; non-RFQ SWAP quotes
- * may not. No user is asked to sign or approve anything.
+ * RFQ quotes require a public receiving wallet; the observed Ondo quote also
+ * required one, despite returning SWAP. No signing or approval is requested.
  */
 export const ONDO_PUBLIC_ADDRESS_REQUIRED =
- 'Ondo quotes may use RFQ venues that require a public BSC receiving wallet address. Enter your public 0x address above before requesting this quote. Never enter a private key or seed phrase. No transaction will be sent.';
+ 'Ondo quotes in Sentinel require a public BSC receiving address. The previously rejected request returned a valid SWAP quote after the address was provided. Enter your public 0x address above. No transaction, wallet connection, signature, or trade is requested.';
 
 export function needsOndoAddress(platform:'ondo'|'bstock', walletAddress:string):boolean {
  return platform==='ondo'&&!walletAddress.trim();
