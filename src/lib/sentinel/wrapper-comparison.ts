@@ -33,7 +33,8 @@ function quoteRow(token:Equity,quote:QuotePreview|undefined,now:number):WrapperQ
    quote.address.toLowerCase()!==token.address.toLowerCase()||!isPositiveFinite(quote.tokenAmount)||
    !isPositiveFinite(quote.amountUsd))
   return {...base,status:'mismatch'};
- if(!previewIsFresh(quote,now))return {...base,status:'expired'};
+ if(!previewIsFresh(quote,now)||Date.parse(quote.checkedAt)+30000<=now)
+  return {...base,status:'expired'};
  const secondsLeft=Math.max(0,Math.ceil((Date.parse(quote.checkedAt)+30000-now)/1000));
  if(ratio===null)return {...base,secondsLeft,status:'ratio-unavailable'};
  const equivalent=quote.tokenAmount*ratio;
@@ -73,4 +74,41 @@ export function compareWrapperQuotes(
  return {status:'ready',rows,budgetUsd:qa.amountUsd,leader,leadPct,
   gapInShareUnits:gap,expiresInSeconds:Math.min(bstock.secondsLeft,ondo.secondsLeft),
   policyFlagged:base.policyFlagged};
+}
+
+/**
+ * Shows the last quote pair as EXPIRED REFERENCE DATA only.
+ * We reconstruct at the moment the more recent quote arrived, and only when
+ * the two authenticated venue responses had an overlapping 30-second window.
+ * Reuses all the existing instrument / ratio / budget validation; never
+ * promotes an expired sample to a new live recommendation.
+ */
+export function expiredWrapperSnapshot(
+ tokens:Equity[],
+ quotes:Partial<Record<Platform,QuotePreview|undefined>>,
+ now:number
+):{comparison:WrapperQuoteComparison;observedAt:number;ageSeconds:number}|null {
+ if(compareWrapperQuotes(tokens,quotes,now).status!=='expired')return null;
+ const qa=quotes.bstock,qb=quotes.ondo;
+ if(!qa||!qb)return null;
+ const ta=Date.parse(qa.checkedAt),tb=Date.parse(qb.checkedAt);
+ if(!Number.isFinite(ta)||!Number.isFinite(tb)||Math.abs(ta-tb)>=30000)return null;
+ const observedAt=Math.max(ta,tb);
+ if(observedAt>now)return null;
+ const past=compareWrapperQuotes(tokens,quotes,observedAt);
+ if(past.status!=='ready')return null;
+ return {comparison:past,observedAt,ageSeconds:Math.max(0,Math.floor((now-observedAt)/1000))};
+}
+
+/** A single bounded clock source drives color, label and the TTL track. */
+export function wrapperCountdown(
+ expiresInSeconds:number|null,
+ refreshing:boolean
+):{phase:'checking'|'waiting'|'fresh'|'closing';label:string;remaining:number;progressPct:number}{
+ if(refreshing)return {phase:'checking',label:'CHECKING BOTH ROUTES',remaining:0,progressPct:0};
+ if(expiresInSeconds===null)return {phase:'waiting',label:'AWAITING TWO QUOTES',remaining:0,progressPct:0};
+ const seconds=Math.min(30,Math.max(0,Math.floor(expiresInSeconds)));
+ return {phase:seconds<=8?'closing':'fresh',
+  label:seconds<=8?'CLOSING SOON · '+seconds+'s':'LIVE · '+seconds+'s',
+  remaining:seconds,progressPct:seconds/30*100};
 }

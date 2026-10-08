@@ -68,3 +68,24 @@ Tested after standalone production deployment `f50d09a`, serving in Singapore `s
 - Unit tests, TypeScript checks and the production build passed. **No real paired Binance quotes were issued by this synthetic browser test**, and no wallet session, approval, trade, or transaction was involved.
 
 As a precision improvement, the issuer price cards now display up to **nine decimal places** for token-to-share conversion ratios, matching the precision used in the normalization panel instead of displaying only six.
+
+## Quote lifecycle polish — October 8, 2026
+
+The owner tested a real live NVDA wrapper comparison and captured **two seconds remaining** on the shorter quote. The product originally hid its current verdict abruptly at expiry. This release adds an explicit lifecycle:
+
+- **LIVE (30–9s):** an animated 30-second progress track shows the minimum remaining lifetime across both issuer quotes, with a live countdown. Time derives from actual quote response timestamps.
+- **CLOSING SOON (8–1s):** the track and panel gently shift to amber, with an "Almost gone" message and the existing **Refresh both quotes** action. No automatic re-quoting, wallet connection, or execution.
+- **EXPIRED (0s):** the green live verdict disappears, the lifetime track empties, and the header explicitly says "QUOTE WINDOW CLOSED". Current-exposure cells become dashes.
+- **PREVIOUS OBSERVATION:** if and only if the same validated pair had overlapping 30-second quote lifetimes, an archival panel remains readable. It displays the earlier calculated share-equivalent amounts and previous difference, clearly stamped **REFERENCE ONLY / NOT EXECUTABLE**. This is not a live winner or guaranteed executable price.
+- **GET FRESH COMPARISON:** the expired panel includes a prominent button to refresh both $10 quotes via the existing read-only API. No trading permissions requested.
+- **REFRESHING:** the panel explicitly reports that new quotes are pending. Old values cannot masquerade as new live results.
+
+Archival safety: no archive is constructed when issuer ticker, contract, provider, input budget, or conversion ratio is invalid or mismatched, or the two quotes' timestamps are 30+ seconds apart. Nothing is stored in local storage or persisted across visits. The archival share-equivalent numbers are reconstructed from the two genuine quote amounts and the currently reported inventory conversion ratios; ratios may change, so the archived view remains illustrative.
+
+Accessibility/motion: the lifetime track is a labeled 0–30 second progressbar; per-second text is intentionally not live-announced to screen readers. Motion respects operating-system reduced-motion preferences.
+
+## TTL validation
+
+    npx tsx --test src/lib/sentinel/wrapper-comparison.test.ts
+
+Tests include the eight-second warning boundary, strict expiry at zero seconds, and historical reconstruction only for previously valid overlapping quote pairs. Browser QA uses locally intercepted synthetic quote responses and a shifted test-browser clock, never fabricated requests sent to Binance.

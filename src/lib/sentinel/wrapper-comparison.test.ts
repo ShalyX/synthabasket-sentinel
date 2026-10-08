@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {compareWrapperQuotes} from './wrapper-comparison';
+import {compareWrapperQuotes,expiredWrapperSnapshot,wrapperCountdown} from './wrapper-comparison';
 import type {Equity,QuotePreview,Platform} from './model';
 
 const now=Date.parse('2026-10-08T14:30:00.000Z');
@@ -88,4 +88,54 @@ test('policy-blocked quotes do not become an execution endorsement',()=>{
  const result=compareWrapperQuotes([bstock,ondo],blocked,now);
  assert.equal(result.status,'ready');
  assert.equal(result.policyFlagged,true);
+});
+
+test('countdown phases progress from live to closing to a non-live state',()=>{
+ const fresh=wrapperCountdown(19,false);
+ assert.equal(fresh.phase,'fresh');
+ assert.equal(fresh.label,'LIVE · 19s');
+ assert.equal(fresh.progressPct,19/30*100);
+ const close=wrapperCountdown(8,false);
+ assert.equal(close.phase,'closing');
+ assert.equal(close.remaining,8);
+ assert.equal(close.label,'CLOSING SOON · 8s');
+ assert.equal(wrapperCountdown(1,false).phase,'closing');
+ assert.equal(wrapperCountdown(null,false).phase,'waiting');
+ assert.equal(wrapperCountdown(19,true).phase,'checking');
+ assert.equal(wrapperCountdown(99,false).progressPct,100);
+ assert.equal(wrapperCountdown(-3,false).progressPct,0);
+});
+
+test('expired pair is readable only as a clearly expired historical reference',()=>{
+ const afterExpiry=now+31000;
+ const live=compareWrapperQuotes([bstock,ondo],pair,afterExpiry);
+ assert.equal(live.status,'expired');
+ assert.equal(live.leader,null);
+ assert.equal(live.gapInShareUnits,null);
+ const snapshot=expiredWrapperSnapshot([bstock,ondo],pair,afterExpiry);
+ assert.ok(snapshot);
+ assert.equal(snapshot.comparison.status,'ready');
+ assert.equal(snapshot.comparison.leader,'ondo');
+ near(snapshot.comparison.rows[0].shareEquivalent!,0.04226751856548);
+ near(snapshot.comparison.rows[1].shareEquivalent!,0.0422822098413);
+ assert.equal(snapshot.ageSeconds,42);
+ assert.equal(snapshot.observedAt,now-11000);
+ assert.equal(expiredWrapperSnapshot([bstock,ondo],pair,now),null);
+});
+
+test('never archive a quote pair that did not overlap in its validity window',()=>{
+ const old=quote('bstock',0.04223466,new Date(now-45000).toISOString());
+ const newer=quote('ondo',0.04220982,new Date(now-11000).toISOString());
+ const disjoint={bstock:old,ondo:newer};
+ assert.equal(compareWrapperQuotes([bstock,ondo],disjoint,now).status,'expired');
+ assert.equal(expiredWrapperSnapshot([bstock,ondo],disjoint,now),null);
+});
+
+test('cannot archive a mismatched instrument, amount or invalid ratio',()=>{
+ const future=now+33000;
+ assert.equal(expiredWrapperSnapshot([bstock,ondo],{bstock:pair.bstock,ondo:{...pair.ondo,amountUsd:20}},future),null);
+ assert.equal(expiredWrapperSnapshot([bstock,ondo],{bstock:{...pair.bstock,ticker:'MSFT'},ondo:pair.ondo},future),null);
+ assert.equal(expiredWrapperSnapshot([bstock,{...ondo,tokenToShareRatio:null}],pair,future),null);
+ assert.equal(expiredWrapperSnapshot([bstock],pair,future),null);
+ assert.equal(expiredWrapperSnapshot([bstock,ondo],{bstock:pair.bstock},future),null);
 });
