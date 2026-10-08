@@ -54,3 +54,17 @@ This is **not a recommendation, a legal ownership claim, a fee-adjusted best-exe
 The tests include the actual historical owner-supplied quote sample, reversed raw/normalized ranking, equal-share exposure, stale quotes, missing conversions, mismatched budgets/contracts/providers, and blocked-policy warning.
 
 For browser QA, inject synthetic quote responses only into a local test-browser session while using the live issuer inventory, so neither an artificial receiving address nor a fake quote is sent to Binance. These QA fixtures are never emitted by the production app.
+
+## Production browser verification — October 8, 2026
+
+Tested after standalone production deployment `f50d09a`, serving in Singapore `sin1`:
+
+- Live `/sentinel/markets/NVDA` loaded two genuine inventory records and the initially empty comparison; with no public BSC receiving address the combined quote action was correctly disabled.
+- To avoid submitting a fabricated public receiver to Binance, a **local Chrome DevTools QA-only interception** replaced exactly the two browser quote POST responses with **clearly synthetic fixtures** using the user's previously observed token amounts. Market inventory, contract addresses and current conversion ratios remained **real and live**.
+- A synthetic public `0x` address was entered into the **isolated QA browser only**; the interception confirmed both $10 issuer quote requests stayed entirely local and never reached Binance.
+- Clicking the new combined action produced `data-comparison-status=ready`, normalized bStocks exposure `0.04226753`, normalized Ondo exposure `0.04228222`, and headline **Ondo +0.0348%**. The observed current ratios were **1.000778224** and **1.001715249**, slightly more precise than the historical six-decimal display; normalized output matched the actual live ratios to within `2e-8`.
+- **390px mobile:** browser `innerWidth=390`, `document.documentElement.scrollWidth=390`; no horizontal scrolling.
+- After the browser's *local test clock* jumped forward by 31 seconds, state changed to `expired`, the winner headline disappeared and normalized outputs became dashes.
+- Unit tests, TypeScript checks and the production build passed. **No real paired Binance quotes were issued by this synthetic browser test**, and no wallet session, approval, trade, or transaction was involved.
+
+As a precision improvement, the issuer price cards now display up to **nine decimal places** for token-to-share conversion ratios, matching the precision used in the normalization panel instead of displaying only six.

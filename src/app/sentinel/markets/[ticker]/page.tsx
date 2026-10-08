@@ -76,7 +76,7 @@ export default function EquityDossier(){
       <div className="desk-issuer-price"><small>OBSERVED TOKEN MARK</small><strong>{formatUsd(token.tokenPrice,4)}</strong></div>
       <div className="desk-issuer-math">
        <div><span>Reference price / share</span><b>{formatUsd(token.referencePrice,4)}</b></div>
-       <div><span>× Token-to-share ratio</span><b>{token.tokenToShareRatio?.toFixed(6)??'—'}</b></div>
+       <div><span>× Token-to-share ratio</span><b>{token.tokenToShareRatio?.toLocaleString('en-US',{minimumFractionDigits:6,maximumFractionDigits:9})??'—'}</b></div>
        <div className="subtotal"><span>= Converted reference</span><b>{formatUsd(parity,4)}</b></div>
        <div className="total"><span>ADJUSTED PREMIUM / DISCOUNT</span><b className={Math.abs(token.basisPct??0)>2.5?'risk':''}>{formatBasis(token.basisPct)}</b></div>
       </div>
