@@ -4,7 +4,7 @@ import {usePathname} from 'next/navigation';
 import {ArrowUpRight,Check,Menu,RefreshCw,X} from 'lucide-react';
 import {useState} from 'react';
 import {DeskProvider,useDesk} from './DeskContext';
-const LINKS=[{href:'/sentinel',name:'The Brief',no:'01'},{href:'/sentinel/demo',name:'Guided Demo',no:'02'},{href:'/sentinel/markets',name:'Market Index',no:'03'},{href:'/sentinel/baskets',name:'Basket Studio',no:'04'},{href:'/sentinel/review',name:'Execution Review',no:'05'}];
+const LINKS=[{href:'/sentinel',name:'The Brief',no:'01'},{href:'/sentinel/demo',name:'Guided Demo',no:'02'},{href:'/sentinel/markets',name:'Market Index',no:'03'},{href:'/sentinel/baskets',name:'Basket Studio',no:'04'},{href:'/sentinel/review',name:'Execution Review',no:'05'},{href:'/sentinel/execute',name:'Simulation Lab',no:'06'}];
 function Shell({children}:{children:React.ReactNode}){
  const path=usePathname();
  const {feed,error,refresh,snapshot,basket}=useDesk();
@@ -12,7 +12,7 @@ function Shell({children}:{children:React.ReactNode}){
  return <div className="desk-root">
   <div className="desk-utility"><div className="desk-wrap desk-utility-inner">
    <span>SYNTHABASKET <i>/</i> TOKENIZED EQUITIES</span>
-   <span className="desk-utility-right"><span className="desk-utility-stripe"/> BSC MAINNET <b>•</b> READ-ONLY RESEARCH DESK</span>
+   <span className="desk-utility-right"><span className="desk-utility-stripe"/> BSC MAINNET <b>•</b> WALLET-GATED EXECUTION WORKFLOW</span>
   </div></div>
   <header className="desk-header">
    <div className="desk-wrap desk-header-inner">
@@ -38,8 +38,8 @@ function Shell({children}:{children:React.ReactNode}){
   {feed!=='live'&&<div className="desk-feed-alert"><div className="desk-wrap desk-alert-inner"><span><b>{feed==='stale'?'Last-known data, not live.':'Upstream unavailable.'}</b> {error||'Live records have not been loaded.'} No invented prices are shown.</span><button type="button" onClick={()=>void refresh()}><RefreshCw size={14}/> Retry feed</button></div></div>}
   <main>{children}</main>
   <footer className="desk-footer"><div className="desk-wrap desk-footer-inner">
-   <div><span className="desk-footer-logo">S / SENTINEL</span><p>Price discovery is a decision process. This research tool never signs or submits orders.</p></div>
-   <div className="desk-footer-links"><span>{snapshot?.count??'—'} verified BSC contracts {snapshot&&feed==='live'?'· LIVE':'· NOT LIVE'}</span><a href="https://github.com/ShalyX/synthabasket-sentinel" target="_blank" rel="noreferrer">Source code <ArrowUpRight size={13}/></a><Link href="/sentinel/demo">Guided demo <ArrowUpRight size={13}/></Link><Link href="/sentinel/markets">Market index <ArrowUpRight size={13}/></Link></div>
+   <div><span className="desk-footer-logo">S / SENTINEL</span><p>Issuer pricing informs the basket. Every leg needs a live quote, built transaction, simulation and distinct wallet authorization. No orders are signed by this app today.</p></div>
+   <div className="desk-footer-links"><span>{snapshot?.count??'—'} verified BSC contracts {snapshot&&feed==='live'?'· LIVE':'· NOT LIVE'}</span><a href="https://github.com/ShalyX/synthabasket-sentinel" target="_blank" rel="noreferrer">Source code <ArrowUpRight size={13}/></a><Link href="/sentinel/demo">Guided demo <ArrowUpRight size={13}/></Link><Link href="/sentinel/markets">Market index <ArrowUpRight size={13}/></Link><Link href="/sentinel/execute">Simulation lab <ArrowUpRight size={13}/></Link></div>
   </div></footer>
  </div>;
 }

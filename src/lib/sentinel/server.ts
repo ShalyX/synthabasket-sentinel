@@ -43,3 +43,37 @@ export async function getSentinelMarkets():Promise<MarketSnapshot>{
  })().finally(()=>{inFlight=null;});
  return inFlight;
 }
+
+
+/**
+ * Only the Binance pre-transaction SIMULATION endpoint can be called via POST.
+ * The endpoint is read-only: do NOT add broadcast, RFQ orders, sign or approve.
+ * Never leak raw transaction payloads or developer credentials in UI responses.
+ */
+export async function binanceSimulateEvmTx(evmTx:{
+ from:string;to:string;value:'0';data:string;
+}):Promise<unknown>{
+ const apiKey=process.env.OC_API_KEY,secret=process.env.OC_SECRET_KEY;
+ if(!apiKey||!secret)throw new UpstreamError('Binance credentials are not configured on this server.',0,503);
+ const path='/api/v1/dex/pre-transaction/simulate';
+ const urlPath='/build'+path;
+ const body=JSON.stringify({binanceChainId:'56',evmTx});
+ const timestamp=new Date().toISOString();
+ const signature=createHmac('sha256',secret).update(timestamp+'POST'+urlPath+body).digest('base64');
+ let response:Response;
+ try{
+  response=await fetch(origin+urlPath,{
+   method:'POST',
+   headers:{'Content-Type':'application/json',Accept:'application/json','X-OC-APIKEY':apiKey,'X-OC-TIMESTAMP':timestamp,'X-OC-SIGN':signature},
+   body,signal:AbortSignal.timeout(12000),cache:'no-store',redirect:'error'
+  });
+ }catch{throw new UpstreamError('Could not reach Binance Transaction API to simulate the swap.',0,502);}
+ let result:{code?:number|string;success?:boolean;msg?:string;data?:unknown};
+ try{result=await response.json();}catch{throw new UpstreamError('Transaction API returned unreadable data.',0);}
+ const code=Number(result.code??0);
+ if(!response.ok||result.success===false||code!==0)
+  throw new UpstreamError(code===40304?'Binance restricts simulation access from this environment.':
+   'Binance simulation request failed (code '+(Number.isFinite(code)?code:'unknown')+').',
+   Number.isFinite(code)?code:0,code===40304?451:502);
+ return result.data;
+}
