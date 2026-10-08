@@ -58,6 +58,9 @@ interface WalletBalances {
  bnbCoversBufferedSwapEstimate:boolean|null;
  gasEstimateAvailable:boolean;
  estimateScope:'LAST_BUILT_SWAP_LEG'|'UNAVAILABLE';
+ stressScenarioGasLimit:3000000;
+ stressScenarioBnb:string|null;
+ bnbCoversStressScenario:boolean|null;
  noTransactions:true;
 }
 type BalanceCheck={walletAddress:string;amountUsd:number;gasLimit:string|null;data:WalletBalances};
@@ -259,7 +262,10 @@ export default function ExecutionLab(){
        <small className={currentBalanceCheck.bnbCoversBufferedSwapEstimate===false?'missing':'sufficient'}>{currentBalanceCheck.bnbCoversBufferedSwapEstimate===null?
         'Unavailable · build & simulate first':currentBalanceCheck.bnbCoversBufferedSwapEstimate?
         'Covers a buffered estimate · not guaranteed':'BNB below this buffered estimate'}</small></div>
-      <p>Read-only BSC mainnet snapshot checked at {new Date(currentBalanceCheck.checkedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. The gas estimate uses only the most recently built swap leg, its reported limit, and the observed gas price plus a 50% buffer. It is <b>not</b> an exact gas quote and excludes any approval transaction or other basket legs. Allowance remains unverified. No trade or wallet authorization.</p>
+      <div><span>3M GAS CAP / STRESS SCENARIO</span><strong>{currentBalanceCheck.stressScenarioBnb===null?'—':currentBalanceCheck.stressScenarioBnb+' BNB'}</strong>
+       <small className={currentBalanceCheck.bnbCoversStressScenario===false?'missing':'sufficient'}>{currentBalanceCheck.bnbCoversStressScenario===null?'Unavailable · network gas price missing':
+        currentBalanceCheck.bnbCoversStressScenario?'BNB covers this conservative cap scenario':'BNB below the conservative cap scenario'}</small></div>
+      <p>Read-only BSC mainnet snapshot checked at {new Date(currentBalanceCheck.checkedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. The built-swap estimate requires a gas limit returned in this session; otherwise it stays unavailable. The separate 3,000,000-gas stress scenario uses Sentinel's maximum allowed limit and current gas price, plus a 50% buffer. It is a <b>planning ceiling, not the expected swap cost</b>. Both exclude separate token approval and other basket legs. Allowance remains unverified. No trade or wallet authorization.</p>
      </div>}
     </section>
     <div className="desk-sim-rails"><div><span>CHAIN</span><strong>BSC / 56</strong></div><div><span>INPUT TOKEN</span><strong>USDT / 18 DECIMALS</strong></div><div><span>MAX PER LEG</span><strong>$25 USDT</strong></div><div><span>MAX BASKET</span><strong>$50 USDT</strong></div><div><span>SLIPPAGE LIMIT</span><strong>0.50%</strong></div><div><span>PRICE IMPACT LIMIT</span><strong>2.00%</strong></div><div><span>SUPPORTED PATH</span><strong>LIQUIDMESH SWAP</strong></div></div>

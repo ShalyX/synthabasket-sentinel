@@ -36,4 +36,7 @@ test('buffered built-swap estimate distinguishes gas present from gas sufficient
  assert.equal(estimateSwapGas(1n,null,limit).gasEstimateAvailable,false);
  assert.equal(estimateSwapGas(1n,gasPrice,null).bnbCoversBufferedSwapEstimate,null);
  assert.throws(()=>estimateSwapGas(1n,gasPrice,100n));
+ const conservative=estimateSwapGas(40_000_000_000_000n,50_000_000n,3_000_000n);
+ assert.equal(conservative.estimatedSwapGasBnb,'0.00022500');
+ assert.equal(conservative.bnbCoversBufferedSwapEstimate,false);
 });

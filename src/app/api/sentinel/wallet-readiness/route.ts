@@ -71,6 +71,9 @@ export async function POST(request:NextRequest){
    ...summarizeFunding(bnb,usdt,minimum),
    ...estimateSwapGas(bnb,gasPrice,gasLimit),
    estimateScope:gasLimit?'LAST_BUILT_SWAP_LEG':'UNAVAILABLE',
+   stressScenarioGasLimit:3000000,
+   stressScenarioBnb:gasPrice===null?null:estimateSwapGas(bnb,gasPrice,3000000n).estimatedSwapGasBnb,
+   bnbCoversStressScenario:gasPrice===null?null:estimateSwapGas(bnb,gasPrice,3000000n).bnbCoversBufferedSwapEstimate,
    checkedAmountUsd:fields.amountUsd,checkedAt:new Date().toISOString(),
    walletAddressReturned:false
   });
