@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import {useEffect,useRef,useState} from 'react';
+import {useRef,useState} from 'react';
 import {ArrowLeft,ArrowRight,CheckCircle2,Clock3,LockKeyhole,RefreshCw,ShieldAlert,ShieldCheck,TriangleAlert,XCircle} from 'lucide-react';
 import {useDesk} from '@/components/sentinel/DeskContext';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
@@ -46,24 +46,26 @@ const fmt=(n:number|null,d=8)=>n==null?'—':n.toLocaleString('en-US',{maximumFr
 const expiry=(raw:string)=>new Date(raw).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
 export default function ExecutionLab(){
- const {basket,snapshot,feed}=useDesk();
- const [budget,setBudget]=useState(50),[receiver,setReceiver]=useState('');
+ const {basket,snapshot,feed,error,refresh}=useDesk();
+ // Simulation-only spend: intentionally independent of the investor's larger Basket Studio budget.
+ const [budget,setBudget]=useState(25),[receiver,setReceiver]=useState('');
  const [running,setRunning]=useState(false),[observations,setObservations]=useState<Observation[]>([]);
  const [runId,setRunId]=useState(0);
  const runRef=useRef(false);
- useEffect(()=>{try{const n=Number(sessionStorage.getItem('sentinel-budget-v1'));if(Number.isInteger(n)&&n>=10&&n<=250)setBudget(n);}catch{/* nonpersistent address */}},[]);
  const legs=basket.map(b=>({...b,amountUsd:amountFor(budget,b),
   token:snapshot?.tokens.find(x=>x.ticker===b.ticker&&x.platform===b.platform)}));
  const total=legs.reduce((a,b)=>a+b.amountUsd,0);
  const outOfBounds=legs.some(x=>x.amountUsd<1||x.amountUsd>SIMULATION_MAX_LEG_USDT);
  const missing=legs.some(x=>!x.token||x.token.tradingAvailable!==true);
  const addressOK=validAddress(receiver.trim());
+ const basketOK=legs.length>0&&!missing;
+ const budgetOK=basketOK&&!outOfBounds&&total<=SIMULATION_MAX_BASKET_USDT;
  const issue=feed!=='live'?'Live BSC market inventory must be available.':
   legs.length===0?'Select an issuer-backed basket first.':
   missing?'An issuer contract is missing or not marked open.':
   total>SIMULATION_MAX_BASKET_USDT?'The simulation basket limit is $50 USDT. Reduce the basket budget.':
   outOfBounds?'Each simulation leg must be between $1 and $25 USDT.':
-  !addressOK?'Enter the public BSC sender address to bind this simulation to a wallet.':null;
+  !addressOK?'Enter a valid public BSC sender address (0x followed by 40 hex characters).':null;
  const complete=observations.length===legs.length&&observations.length>0&&observations.every(x=>x.status==='pass');
  const blocked=observations.some(x=>x.status==='blocked');
  async function runSimulation(){
@@ -163,6 +165,31 @@ export default function ExecutionLab(){
       autoComplete="off" spellCheck={false} placeholder="0x… public address only"/>
      <small>Sent only to Binance's read-only quote/build/simulate endpoints after clicking the button. Never paste a seed phrase or private key. Nothing is saved to browser storage.</small>
     </label>
+    <div className="desk-sim-preflight" aria-live="polite">
+     <div className="desk-sim-preflight-top"><strong>BEFORE SIMULATION</strong><span>{issue?'ACTION REQUIRED':'READY TO SIMULATE'}</span></div>
+     <div className="desk-sim-preflight-item"><span className={feed==='live'?'ready':'pending'}>{feed==='live'?'✓':'!'}</span>
+      <div><strong>Live BSC market feed</strong><small>{feed==='live'?'Issuer inventory connected':feed==='connecting'?'Connecting to Binance market data…':error||'Market feed unavailable'}</small></div>
+      {feed!=='live'&&<button type="button" onClick={()=>void refresh()} disabled={running}>Retry feed</button>}
+     </div>
+     <div className="desk-sim-preflight-item"><span className={basketOK?'ready':'pending'}>{basketOK?'✓':'!'}</span>
+      <div><strong>Selected issuer-backed basket</strong><small>{legs.length===0?'No basket selected':missing?'An issuer is unavailable for trading':`${legs.length} issuer-backed leg${legs.length===1?'':'s'} selected`}</small></div>
+      {!basketOK&&<Link href="/sentinel/baskets">Choose basket</Link>}
+     </div>
+     <label className="desk-sim-budget-control" htmlFor="desk-sim-budget-select">
+      <span className={budgetOK?'ready':'pending'}>{budgetOK?'✓':'!'}</span>
+      <div><strong>Simulation-only total</strong><small>Does not change your Basket Studio investment budget. $1–$25 per leg, $50 total max.</small></div>
+      <select id="desk-sim-budget-select" value={budget} disabled={running} onChange={e=>{setBudget(Number(e.target.value));setObservations([]);}}>
+       {[10,20,25,35,50].map(value=><option key={value} value={value}>${value} USDT</option>)}
+      </select>
+     </label>
+     {!budgetOK&&basketOK&&<div className="desk-sim-preflight-remedy">
+      <span>{total>SIMULATION_MAX_BASKET_USDT?'This exceeds the $50 basket cap.':'One or more allocations fall outside the $1–$25 per-leg limit.'}</span>
+      {budget!==25&&<button type="button" disabled={running} onClick={()=>{setBudget(25);setObservations([]);}}>Use safe $25 test</button>}
+     </div>}
+     <div className="desk-sim-preflight-item"><span className={addressOK?'ready':'pending'}>{addressOK?'✓':'!'}</span>
+      <div><strong>Public BSC sender address</strong><small>{addressOK?'Format verified · no wallet connection or signature required':'Enter a valid 0x address in the field above'}</small></div>
+     </div>
+    </div>
     <div className="desk-sim-rails"><div><span>CHAIN</span><strong>BSC / 56</strong></div><div><span>INPUT TOKEN</span><strong>USDT / 18 DECIMALS</strong></div><div><span>MAX PER LEG</span><strong>$25 USDT</strong></div><div><span>MAX BASKET</span><strong>$50 USDT</strong></div><div><span>SLIPPAGE LIMIT</span><strong>0.50%</strong></div><div><span>PRICE IMPACT LIMIT</span><strong>2.00%</strong></div><div><span>SUPPORTED PATH</span><strong>LIQUIDMESH SWAP</strong></div></div>
     <button type="button" className="desk-sim-run" onClick={()=>void runSimulation()} disabled={running||!!issue}>
      {running?<RefreshCw size={17} className="desk-spin"/>:<ShieldAlert size={18}/>}

@@ -1109,3 +1109,21 @@
 @media(max-width:1110px){.desk-sim-layout{grid-template-columns:minmax(0,1.2fr) minmax(270px,.8fr)}.desk-sim-primary{padding:27px}.desk-sim-rail{padding:27px 20px}}
 @media(max-width:850px){.desk-sim-hero{grid-template-columns:1fr}.desk-sim-lock{max-width:450px}.desk-sim-layout{grid-template-columns:1fr}.desk-sim-rail{border-left:0;border-top:1px solid #bbc8b7}.desk-sim-list{margin-top:20px}}
 @media(max-width:620px){.desk-sim-hero h1{font-size:clamp(44px,10vw,65px)}.desk-sim-band{font-size:9px;gap:12px}.desk-sim-primary,.desk-sim-rail{padding:21px 15px}.desk-sim-heading{flex-direction:column;align-items:stretch}.desk-sim-budget{text-align:left}.desk-sim-leg-top{gap:8px}.desk-sim-leg-identity strong{font-size:24px}.desk-sim-leg-spend{font-size:17px}.desk-sim-leg-stage{padding-left:0}.desk-sim-chip{margin-left:0}.desk-sim-result{margin-left:0}.desk-sim-result>div{padding:12px 9px}.desk-sim-result strong{font-size:10px}.desk-sim-okay,.desk-sim-failure{margin-left:0}.desk-sim-final{padding:17px}.desk-sim-budget strong{font-size:29px}}
+
+/* Simulation Lab / explicit readiness and adjustable simulation-only spend */
+.desk-sim-preflight{margin-top:22px;border:1px solid #bacab8;background:#f8f7ef;padding:17px 17px 5px}
+.desk-sim-preflight-top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:12px;border-bottom:1px solid #d4ddd1}
+.desk-sim-preflight-top strong{font:760 10px var(--font-mono),monospace;letter-spacing:.09em;color:#375941}
+.desk-sim-preflight-top>span{font:750 9px var(--font-mono),monospace;letter-spacing:.06em;color:#9d5943}
+.desk-sim-preflight-item,.desk-sim-budget-control{display:grid;grid-template-columns:19px minmax(0,1fr) auto;gap:9px;align-items:center;padding:13px 0;border-bottom:1px solid #e0e5dc}
+.desk-sim-preflight-item>span,.desk-sim-budget-control>span{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;font:800 12px var(--font-mono),monospace}
+.desk-sim-preflight-item>span.ready,.desk-sim-budget-control>span.ready{background:#dcebdc;color:#336340}
+.desk-sim-preflight-item>span.pending,.desk-sim-budget-control>span.pending{background:#f4dfd4;color:#a45139}
+.desk-sim-preflight-item strong,.desk-sim-budget-control strong{display:block;font:740 11px var(--font-mono),monospace;color:#375440}
+.desk-sim-preflight-item small,.desk-sim-budget-control small{display:block;margin-top:5px;font-size:10px;line-height:1.55;color:#70826f;overflow-wrap:anywhere}
+.desk-sim-preflight-item a,.desk-sim-preflight-item button,.desk-sim-preflight-remedy button{font:750 10px var(--font-mono),monospace;color:#ad5b3f;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.desk-sim-preflight-item button:disabled,.desk-sim-preflight-remedy button:disabled{opacity:.45}
+.desk-sim-budget-control select{min-width:100px;max-width:135px;padding:10px 8px;border:1px solid #adbdaa;background:#fffdf6;font:750 11px var(--font-mono),monospace;color:#35513d}
+.desk-sim-preflight-remedy{display:flex;gap:12px;justify-content:space-between;align-items:center;background:#f6e9dd;padding:10px 12px;font-size:10px;line-height:1.6;color:#95583c}
+.desk-sim-preflight-remedy span{min-width:0}
+@media(max-width:620px){.desk-sim-preflight-item,.desk-sim-budget-control{grid-template-columns:19px minmax(0,1fr)}.desk-sim-preflight-item a,.desk-sim-preflight-item button,.desk-sim-budget-control select{grid-column:2;justify-self:start}.desk-sim-preflight-remedy{flex-wrap:wrap}.desk-sim-preflight{padding:14px 13px 4px}}
