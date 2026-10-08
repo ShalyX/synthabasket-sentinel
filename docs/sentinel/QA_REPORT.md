@@ -2,7 +2,7 @@
 
 ## Deployed / CI
 
-Branch: `feat/sentinel-research-desk`.
+Historical QA of the original feature branch (now deleted after extraction). Current standalone repo: https://github.com/ShalyX/synthabasket-sentinel, branch `main`. See STATUS.md for current state.
 - **PASS** [GitHub Actions CI](https://github.com/ShalyX/synthabasket/actions/runs/37717746043): allocations and market/policy unit tests, TypeScript `tsc --noEmit`, Next.js production build.
 - **PASS** Deployed Vercel UI Preview: https://synthabasket-ajhjg73ic-shalyxs-projects.vercel.app/sentinel
 - **PASS** Actual Chrome screenshots inspected at 1440x950 (Brief, Market Index, Basket Studio) and CDP screenshot emulation at 390x844 for the five distinct page types. At 390px `documentElement.scrollWidth === window.innerWidth` and mobile menu control is shown. Oversized headline spacing corrected in commit a709029.
@@ -28,3 +28,13 @@ Cleared outdated, unreferenced Codex installation caches last modified before Se
 ## Submission gates
 
 Get permitted judge-accessible data or provide explicit local reproduction instructions and video; secure issuer trade eligibility; demonstrate real user flow without fake data; complete the user's own developer-experience report. Binance Agentic Wallet and BNB Agent Studio remain optional and unimplemented.
+
+## Standalone Git and Vercel separation — October 8, 2026
+
+This repository was extracted into a new independent root commit, excluding the original Solana app, Solana smart contracts, Solana workflows and dependencies. See `REPO_SEPARATION.md` for the exact verified original and new project IDs.
+
+- **Current canonical source:** https://github.com/ShalyX/synthabasket-sentinel, `main`. Previous references in this historical QA log to the deleted feature branch and its Vercel deployments are preserved as historical test evidence only.
+- **Current canonical host:** https://synthabasket-sentinel.vercel.app. `/sentinel`, `/sentinel/markets`, `/sentinel/review` and the root redirect returned HTTP 200.
+- **Original STOCKLANA main remains** `281b127`, production HTTP 200. The old remote Sentinel branches and preview-only Binance credentials were explicitly removed from STOCKLANA.
+- **Present market API state:** the new Vercel project has no Binance credentials; inventory correctly returns HTTP 503. The older restricted `40304` result is a documented historical cloud-hosting experiment.
+- **Dependency isolation:** dropped unused Solana SDK/wallet/Anchor dependencies from package and regenerated lockfile. New Node 22 CI is the authoritative build verification.

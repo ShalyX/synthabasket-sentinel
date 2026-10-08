@@ -1,6 +1,6 @@
 # Singapore Region Diagnostic — 2026-10-08
 
-Scope: **preview branch only**, `feat/sentinel-research-desk`. Production deployment, Solana app and quote/transaction backend are unchanged.
+Historical experiment on a now-deleted preview branch (`feat/sentinel-research-desk`) of the original Vercel project. It did **not** result in a verified Singapore execution. The independent Sentinel deployment is separate; the original Solana production branch and app were unchanged.
 
 ## Why
 

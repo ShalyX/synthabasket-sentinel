@@ -1,61 +1,57 @@
-# SynthaBasket Sentinel — judge runbook
+# SynthaBasket Sentinel — Judge Reproduction Guide
 
-## Project and exact build
+**Standalone GitHub repository:** https://github.com/ShalyX/synthabasket-sentinel
+**Live UI:** https://synthabasket-sentinel.vercel.app
+**Runtime:** Next.js 15 / Node.js 22 / BNB Smart Chain (chain 56).
+**Original STOCKLANA entry:** separate repo and deployment at https://github.com/ShalyX/synthabasket and https://synthabasket.vercel.app.
 
-Repository: https://github.com/ShalyX/synthabasket
-Development branch: `feat/sentinel-research-desk`
-Hosted read-only preview: https://synthabasket-ajhjg73ic-shalyxs-projects.vercel.app/sentinel
-Live stock data in hosted preview **is currently blocked** by Binance business code `40304`; see HOSTING_STATUS.md.
+## Honest deployment status
 
-Sentinel is separate from the original Solana SynthaBasket app. It offers BSC tokenized-stock issuer discovery, ratio-adjusted parity analysis, a thematic basket studio, and read-only pre-transaction quote/policy review. It does not submit, approve, sign or execute trades, nor does it claim Binance Agentic Wallet or Agent Studio integration.
+The public Sentinel application is deployed and responds on all five product screens. Its Binance RWA market feed is **not publicly available**: the isolated Vercel project currently has no Binance developer API keys and responds with HTTP 503 and an explicit unavailable state. Earlier signed cloud-hosted requests, when the credentials were present in the original development preview, returned business error **40304** due to compliance restrictions. This is a real upstream limitation, **not** an example price feed or a successful live trade. See HOSTING_STATUS.md.
 
-## Reproduce in an eligible environment
-
-Requirements: Node.js **22.x**, npm, a Binance Web3 Developer API key and secret, and access that is **permitted under Binance's terms and your jurisdiction**. Do not use unapproved tunnels or IP masking to evade restrictions.
+## Run the BNB research desk
 
 ```sh
-git clone --branch feat/sentinel-research-desk https://github.com/ShalyX/synthabasket.git
-cd synthabasket
+git clone https://github.com/ShalyX/synthabasket-sentinel.git
+cd synthabasket-sentinel
 npm ci --legacy-peer-deps
-```
-
-Create a local, **untracked** `.env.local`:
-
-```dotenv
-OC_API_KEY=your_personal_api_key
-OC_SECRET_KEY=your_personal_secret_key
-```
-
-Start:
-
-```sh
 npm run dev
 ```
 
-Open `http://localhost:3000/sentinel` and visit:
+Visit http://localhost:3000 (redirects to `/sentinel`). Navigate:
 
-1. **The Brief** (`/sentinel`) — observes source availability and underlying-to-token price math.
-2. **Market Index** (`/sentinel/markets`) — searches verified BSC Ondo/bStocks inventory.
-3. **Instrument Dossier** (`/sentinel/markets/NVDA`) — issuer-specific token contracts and conversion-adjusted basis.
-4. **Basket Studio** (`/sentinel/baskets`) — choose up to four different underlying tickers and adjust weight to exactly 100%.
-5. **Execution Review** (`/sentinel/review`) — request per-leg SWAP or RFQ quotes with optional public EVM wallet address; inspect time-limited quote and deterministic guard verdict.
+1. `/sentinel` — The Brief: issuer parity anatomy and honestly displayed source status.
+2. `/sentinel/markets` — Market Index: searches actual signed BSC RWA inventory when the feed is authorized.
+3. `/sentinel/markets/NVDA` — Dossier: issuer-specific stock contracts and token-to-share conversion.
+4. `/sentinel/baskets` — Basket Studio: up to four distinct underlying tickers, explicit issuer selection and exactly 100% proposed weights.
+5. `/sentinel/review` — Execution Review: quote/policy review and a **local-only wallet-readiness file**. Nothing signs, approves or broadcasts.
 
-Never provide a private key, seed phrase or wallet signature. Wallet address in quote input is optional and public. Executions are intentionally locked.
+To enable market research, supply **your own** permitted Binance Web3 developer API credentials in a **gitignored local** `.env.local`:
 
-## Verify code independently
+```dotenv
+OC_API_KEY=your_own_api_key
+OC_SECRET_KEY=your_own_secret_key
+```
+
+Do not attempt to bypass Binance geography or account-compliance restrictions. A successful connection on one machine does not guarantee eligibility elsewhere.
+
+## Automated validation
 
 ```sh
 npx tsx --test src/lib/sentinel/*.test.ts
+node --test scripts/agentic-wallet-readonly.test.mjs scripts/agentic-wallet-diagnostic.test.mjs
 npx tsc --noEmit
 npm run build
 ```
 
-GitHub Actions tests and Next.js production build passed on October 8, 2026; see CI records on the branch. See `../BNB_RWA_OBSERVATIONS.md` for historical real API evidence, including two honest simulation failures from an unfunded wallet.
+See [Sentinel CI](https://github.com/ShalyX/synthabasket-sentinel/actions/workflows/sentinel-ci.yml) for the current clean Node.js 22 build on the **new standalone repository**.
 
-## Demonstration and score integrity
+## Agentic Wallet
 
-The preview can display unavailable feed states; **this is not a live-data success claim**. A judge in an unsupported region may likewise receive a compliance error. The project follows fail-closed behavior: it does not substitute fabricated stock prices or pretend a quote is an executed trade.
+The builder paired the official Binance Agentic Wallet CLI v1.10.0 locally and verified wallet `CONNECTED`, BSC support, restricted token scope, AutoReject high-risk handling and configured daily limit. `scripts/agentic-wallet-diagnostic.mjs` produces a sanitized JSON record **locally**, which the browser imports without transmitting it to Vercel. This is **not** a signed wallet attestation, spending authorization, successful Agentic Wallet quote or autonomous agent.
 
-Official hackathon rules allow repo + demo + deployed link or reproduction instructions. A developer-experience report is mandatory and counts for 25% of judging; per the organizers, it must be personally authored by the builder, not AI-generated.
+See [Agentic Wallet proof](AGENTIC_WALLET_PROOF.md), [QA report](QA_REPORT.md) and [technical architecture](ARCHITECTURE.md).
 
-https://www.bnbchain.org/en/hackathons/tokenized-stocks
+## Submission integrity
+
+No on-chain orders, wallet approvals, real swaps, or trading executions are claimed. A user's personal Binance eligibility must be checked separately. The hackathon's developer-experience report must be personally authored by the user, not generated by AI. Source observations document real signed API traffic and earlier correctly failed BSC simulation attempts from an unfunded wallet.

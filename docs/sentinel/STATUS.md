@@ -1,24 +1,15 @@
-# Sentinel status — multi-page research-desk tranche
+# SynthaBasket Sentinel — Standalone Project Status
 
-Date: October 8, 2026
-Source branch `feat/sentinel-research-desk`, separate from original Solana product.
+**October 8, 2026.** This is the independent BNB Chain Sentinel application, not the original STOCKLANA Solana index protocol.
 
-### Verified
-- Previous signed Binance API and BSC simulator spike on the user's PC: real RWA inventory and issuer quotes, build, failed (unfunded) simulations, all without spending.
-- Five separate product routes: Brief, Market Index, Stock Dossier, Basket Studio, Execution Review.
-- First redesign commit c95b1b2 passed tests, typecheck and production build in GitHub Actions run 37717746043.
-- Actual 1440px screenshots reviewed; true CDP 390px emulation showed no horizontal overflow on all five route types, with mobile navigation replacing desktop navigation.
-- Browser credentials are never exposed in client code; local .env.local gitignored.
-- Sensitive OC_API_KEY and OC_SECRET_KEY now added to Vercel **branch-specific preview** only. No production environment changes.
+- **GitHub:** https://github.com/ShalyX/synthabasket-sentinel — `main`, independent root commit `743e938`, with no inherited STOCKLANA Git ancestry.
+- **Vercel:** https://synthabasket-sentinel.vercel.app — independent project `synthabasket-sentinel` linked to this repository; all five research views deployed.
+- **Original STOCKLANA remains:** https://github.com/ShalyX/synthabasket and https://synthabasket.vercel.app. Its `main` commit was independently verified unchanged as `281b127` after the split. The original repo's two Sentinel feature branches were deleted once the independent repository was pushed and its production site validated.
+- **Source isolation:** Removed Solana program, Solana app routes, Solana-specific API routes, legacy CI and Solana-only dependencies from the standalone copy. The original repository was not modified during the extraction.
+- **Secrets:** No personal local environment or wallet credentials were copied. Old preview-only OC_API_KEY/OC_SECRET_KEY in the original Vercel project were deleted. The new Vercel project has no Binance API credentials pending a permitted data hosting solution.
+- **CI:** New Node 22 workflow runs all data/policy/diagnostic tests, TypeScript and production Next.js build. See https://github.com/ShalyX/synthabasket-sentinel/actions/workflows/sentinel-ci.yml.
+- **Locally verified wallet:** official Binance Agentic Wallet CLI successfully paired, CONNECTED, BSC supported, high-risk AutoReject, restricted trade tokens and a configured daily cap. The app's private import of a sanitized read-only diagnostic was browser-tested at 390px. **Live Agentic Wallet quote remains unverified.**
+- **Market feed:** Hosted Binance API compliance code 40304 was verified on the previous signed US preview. This independent Vercel project currently reports 503 until approved credentials/hosting are available. Do not claim the site shows live stock data.
+- **Singapore:** A route-level `preferredRegion='sin1'` was requested on the old preview, but its function still ran in `iad1`. No genuine Singapore request was verified. There is no circumventing proxy or region-hopping fallback.
 
-### In progress
-- Multi-page design deployed and viewport-tested; Node 22 CI passes. Desktop screenshot refinement/interactive acceptance remains to be completed.
-- Hosted RWA endpoint initially returned HTTP 503 before Vercel secrets; after adding branch-scoped secrets the API definitively returned HTTP 451 / Binance business code 40304. Ask Binance for an approved, judge-accessible backend rather than VPN-based bypass.
-- No live Mainnet trade until legal eligibility, wallet allowances/balances, safe simulation and explicit user confirmation.
-- Agentic Wallet CLI read-only adapter **connected and verified locally**: official Binance App pairing SUCCESS, wallet status CONNECTED, BSC chain supported, AutoReject high-risk policy, restricted token scope, and daily limit configured. Four local adapter tests passed; see AGENTIC_WALLET_PROOF.md. The Agent Studio prize track is still **not implemented**, and Agentic Wallet trading execution remains unverified.
-
-### PC storage
-Safe npm/pip/inactive npx cache cleanup increased C: free space from roughly 0.24 GiB to 1.46 GiB initially. Active creative tool and runtime caches were left intact. Some space has since been consumed by other activity/our temporary headless Chrome QA profiles; our QA profiles were later cleared. Check actual current free space before more installations.
-
-### Next gate
-Verify updated preview API results with branch-scoped credentials, record allowed/blocker response, then judge-accessible hosting plan. Capture live-data UI QA in a permitted environment. The DX report must be personally authored by the builder under official rules.
+**Next priorities:** authorized live market-data hosting; verify permitted venue quote in a compliant environment; finish judge-facing demo and user-written developer-experience report. No claims of executed trades or autonomous Agent Studio integration.

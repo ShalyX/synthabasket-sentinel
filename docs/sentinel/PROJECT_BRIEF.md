@@ -1,5 +1,5 @@
 # Sentinel — locked product brief
-Date: 2026-10-08. Existing app: https://github.com/ShalyX/synthabasket.
+Date: 2026-10-08. Initially researched alongside the existing Solana app at https://github.com/ShalyX/synthabasket. The BNB project is now independently maintained at https://github.com/ShalyX/synthabasket-sentinel.
 Problem: tokenized stocks across Ondo and bStocks may differ in contract, price, conversion ratio, trading status, and executable route. Raw onchain prices are not directly comparable with underlying stock quotes.
 User: a BSC wallet holder researching small, thematic baskets before trading.
 Core value: inspect a thesis at the asset, issuer and execution-route level before authorizing spending.

@@ -37,3 +37,9 @@ The official hackathon allows a deployed link **or instructions that a judge can
 Event terms: https://www.bnbchain.org/en/hackathons/tokenized-stocks
 
 Production keys were not changed. Only the named feature branch's Vercel Preview contains the sensitive environment variables.
+
+## After independent repository migration (2026-10-08)
+
+Current app is **https://synthabasket-sentinel.vercel.app** from **https://github.com/ShalyX/synthabasket-sentinel**, with independent Git history and Vercel project. The two earlier `OC_*` credentials were **removed** from the original Vercel project's branch-specific preview settings. The new project has not been provisioned with Binance secrets. It responds with **HTTP 503: Binance credentials are not configured**, distinct from historical signed HTTP 451/40304 tests.
+
+Do not treat any previous mention in this file of 'currently present preview credentials' as the present configuration; those were a temporary diagnostic on a now-deleted branch. Any future permissioned data provider should be configured independently for Sentinel following Binance's account/jurisdiction rules and without affecting the STOCKLANA project.

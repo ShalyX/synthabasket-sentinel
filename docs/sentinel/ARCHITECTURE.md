@@ -1,5 +1,5 @@
 # Sentinel — multi-room architecture
-Based on the original SynthaBasket Next.js 15 app; original `/app` and Solana vault remain unchanged.
+Standalone Next.js 15 app in `ShalyX/synthabasket-sentinel`. The original Solana `/app` routes and vault are intentionally absent; they remain preserved in the separate `ShalyX/synthabasket` repository.
 
 ## Routes
 - `/sentinel` — independent editorial brief and price-anatomy reference demonstration
