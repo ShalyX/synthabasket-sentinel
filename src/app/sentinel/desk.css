@@ -730,3 +730,15 @@
  .desk-agentic-disclaimer{padding:16px 19px}
  .desk-agentic-values strong{font-size:21px}
 }
+
+/* RFQ receiving wallet address: intentionally public only, never a wallet connection. */
+.desk-quote-receiver{display:grid;grid-template-columns:1.1fr 1fr;gap:25px;align-items:center;margin:36px 0 28px;padding:22px 24px;border:1px solid var(--line-heavy);background:#eef0e8}
+.desk-quote-receiver>div:first-child>span{font:720 10px var(--font-mono),monospace;letter-spacing:.11em;color:#93543f}
+.desk-quote-receiver>div:first-child>p{font-size:12px;line-height:1.75;color:#5e6f60;margin-top:12px;max-width:455px}
+.desk-quote-receiver>div:first-child strong{color:#304c3d}
+.desk-quote-receiver .desk-dossier-context-form{padding:17px 18px;border-left:3px solid #b9674d}
+.desk-quote-receiver .desk-dossier-context-form input{margin-top:10px;margin-bottom:8px}
+.desk-issuer-quote-requirement{font-size:11px;line-height:1.6;padding:12px;margin-top:12px;color:#874e40;background:#f0e5d9;border-left:2px solid #bf6a50}
+.desk-dossier-context{grid-template-columns:.75fr 1.9fr}
+@media(max-width:850px){.desk-quote-receiver{grid-template-columns:1fr}}
+@media(max-width:620px){.desk-quote-receiver{padding:17px 16px;gap:16px}.desk-quote-receiver .desk-dossier-context-form{padding:13px}.desk-dossier-context{grid-template-columns:1fr}}

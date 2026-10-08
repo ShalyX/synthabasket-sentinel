@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {assessPreview} from '@/lib/sentinel/policy';
 import {tokenUnits,type QuotePreview} from '@/lib/sentinel/model';
+import {needsOndoAddress,ONDO_PUBLIC_ADDRESS_REQUIRED,quoteBusinessError} from '@/lib/sentinel/quote-issues';
 import {BSC_USDT,binanceGet,getSentinelMarkets,UpstreamError} from '@/lib/sentinel/server';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -27,6 +28,10 @@ export async function POST(req:NextRequest){
   const token=markets.tokens.find(t=>t.ticker===ticker&&t.platform===platform);
   if(!token)return NextResponse.json({error:'Token is not in the verified live BSC inventory.'},{status:404});
   if(token.tradingAvailable!==true)return NextResponse.json({error:'Issuer has not confirmed this token is open for trading.'},{status:409});
+  // RFQ venues for Ondo require a public receiving wallet. Do not call Binance
+  // with a known-incomplete quote request or silently inject an arbitrary address.
+  if(needsOndoAddress(token.platform,typeof walletAddress==='string'?walletAddress:''))
+   return NextResponse.json({error:ONDO_PUBLIC_ADDRESS_REQUIRED,code:'PUBLIC_WALLET_REQUIRED',requiresWalletAddress:true},{status:422});
   const amount=(BigInt(Math.round(amountUsd*100))*10n**16n).toString();
   const qs:Record<string,string>={binanceChainId:'56',amount,fromTokenAddress:BSC_USDT,toTokenAddress:token.address};
   if(typeof walletAddress==='string')qs.userWalletAddress=walletAddress;
@@ -48,6 +53,8 @@ export async function POST(req:NextRequest){
    review:assessPreview(token,amountUsd,impact,checkedAt)};
   return NextResponse.json(preview,{headers:{'Cache-Control':'no-store'}});
  }catch(e){const err=e instanceof UpstreamError?e:new UpstreamError('Quote could not be obtained.',0);
+  const message=quoteBusinessError(err.code,platform as 'ondo'|'bstock',typeof walletAddress==='string');
+  if(message)return NextResponse.json({error:message,code:err.code,requiresWalletAddress:typeof walletAddress!=='string'},{status:422});
   return NextResponse.json({error:err.message,code:err.code},{status:err.httpStatus});
  }
 }

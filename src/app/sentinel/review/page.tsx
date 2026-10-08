@@ -8,6 +8,7 @@ import {BlankState,ClearBanner,Eyebrow,TokenMark} from '@/components/sentinel/De
 import {amountFor} from '@/lib/sentinel/basket';
 import {formatBasis,formatUsd,type QuotePreview} from '@/lib/sentinel/model';
 import {previewIsFresh} from '@/lib/sentinel/policy';
+import {publicWalletAddressValid} from '@/lib/sentinel/quote-issues';
 type QuoteStatus={loading:boolean;quote?:QuotePreview;error?:string};
 const criteria=[
  {no:'01',name:'Issuer availability',explain:'Is this particular token open for trading according to the data provider?'},
@@ -27,6 +28,7 @@ export default function ExecutionReview(){
  const failed=rows.filter(r=>!!r.state?.error||(r.state?.quote&&!r.fresh)||r.state?.quote?.review.status==='blocked').length;
  const verdict=rows.length>0&&rows.length===succeeded?'CHECKS PASSED / NO EXECUTION':'REVIEW INCOMPLETE';
  const readyToCheck=feed==='live'&&assets.length>0&&assets.every(x=>x.token&&amountFor(budget,x)>=1);
+ const hasOndoRFQ=assets.some(x=>x.platform==='ondo');
  async function inspect(){
   if(runRef.current||!readyToCheck)return;
   runRef.current=true;setRunning(true);setEverRan(true);setQuotes({});
@@ -82,7 +84,7 @@ export default function ExecutionReview(){
    <aside className="desk-review-rail">
     <div className="desk-review-rail-heading"><span>POLICY ENGINE / V1</span><h2>Four reasons<br/>to say no.</h2><p>Deterministic checks. Not a deployed Agentic Wallet or autonomous Agent Studio agent.</p></div>
     <div className="desk-rule-list">{criteria.map(x=><div key={x.no}><span>{x.no}</span><div><b>{x.name}</b><p>{x.explain}</p></div></div>)}</div>
-    <div className="desk-review-wallet"><label htmlFor="desk-review-wallet">PUBLIC EVM ADDRESS / OPTIONAL</label><input id="desk-review-wallet" placeholder="0x… only for wallet-specific RFQs" value={wallet} onChange={e=>{setWallet(e.target.value);setQuotes({});setEverRan(false);}} autoComplete="off" spellCheck={false}/><p>Used only for this request. Never enter a seed phrase or private key.</p></div>
+    <div className="desk-review-wallet"><label htmlFor="desk-review-wallet">PUBLIC BSC ADDRESS / {hasOndoRFQ?'ONDO RFQ RECEIVER':'OPTIONAL FOR SWAP'}</label><input id="desk-review-wallet" placeholder="0x… (public address only)" value={wallet} onChange={e=>{setWallet(e.target.value);setQuotes({});setEverRan(false);}} autoComplete="off" spellCheck={false}/><p>{hasOndoRFQ&&!wallet.trim()?'This basket contains an Ondo instrument. Its RFQ venue may require a public BSC receiving address before a quote can be reviewed.':wallet.trim()&&!publicWalletAddressValid(wallet)?'That is not a valid public EVM address. Enter 0x followed by 40 hexadecimal characters.':'Used only with your explicit quote request. No wallet connection, approval or signature.'} Never enter a seed phrase or private key.</p></div>
     <button className="desk-button-accent desk-run" type="button" onClick={()=>void inspect()} disabled={running||!readyToCheck}>{running?<><RefreshCw className="desk-spin" size={18}/> Checking venues…</>:<><ShieldAlert size={18}/> Request fresh quotes <ArrowRight size={18}/></>}</button>
     <p className="desk-review-run-note">{!readyToCheck?(feed!=='live'?'Requires an authorized, live Binance market connection.':'Return to Basket Studio to construct a valid proposal.'):'Quotes expire quickly. Review results immediately after the request finishes.'}</p>
     <WalletReadiness now={now}/>
