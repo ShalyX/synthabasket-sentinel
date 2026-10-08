@@ -1145,3 +1145,41 @@
 .desk-sim-funding-results>p{grid-column:1/-1;font-size:10px;line-height:1.65;color:#6c806d;margin-top:2px}
 .desk-sim-funding-error{font-size:11px;line-height:1.6;margin-top:12px;color:#a4533a}
 @media(max-width:620px){.desk-sim-funding-head{flex-direction:column}.desk-sim-funding-results{grid-template-columns:1fr}.desk-sim-funding{padding:14px}}
+
+/* Wallet controls / permissionless browse and wallet-bound simulation */
+.desk-wallet-control{position:relative;flex:none}
+.desk-wallet-trigger{display:flex;align-items:center;justify-content:center;gap:9px;border:1px solid #aab4a5;background:#fffaf1;color:#273f33;padding:11px 13px;font:730 10px var(--font-mono),monospace!important;white-space:nowrap}
+.desk-wallet-trigger.connected{background:#2c5b3c;border-color:#2c5b3c;color:#fff}
+.desk-wallet-trigger.wrong-chain{border-color:#d19970;background:#fbe8d7;color:#a35a37}
+.desk-wallet-trigger:hover{border-color:#9d543b}
+.desk-wallet-menu{position:absolute;z-index:75;right:0;top:calc(100% + 9px);width:min(338px,calc(100vw - 30px));background:#fffdf5;border:1px solid #aab3a5;box-shadow:0 16px 36px #213b2d2a;color:#294335;padding:18px;font-size:12px}
+.desk-wallet-menu-title{padding-bottom:15px;border-bottom:1px solid #cad1c6}
+.desk-wallet-menu-title strong{font:750 10px var(--font-mono),monospace;letter-spacing:.12em;color:#aa5e3e}
+.desk-wallet-menu-title small{display:block;font-size:11px;line-height:1.55;color:#68786d;margin-top:8px}
+.desk-wallet-choices{display:grid;gap:7px;margin-top:14px}
+.desk-wallet-choices button{display:flex;align-items:center;gap:9px;padding:13px;background:#edf0e8;border:1px solid #cbd5c7;color:#2c523b;font:750 11px var(--font-mono),monospace!important;text-align:left}
+.desk-wallet-choices button>span:last-child{margin-left:auto;color:#b15c42;font-size:10px}
+.desk-wallet-choices button:hover{background:#e1e9dc}
+.desk-wallet-choices p{font-size:12px;line-height:1.6;color:#7b8278;margin:14px 0}
+.desk-wallet-current{padding-top:14px}
+.desk-wallet-current-top{display:flex;align-items:center;gap:9px}
+.desk-wallet-current-top svg{color:#39754e}
+.desk-wallet-current-top strong,.desk-wallet-current-top small{display:block}
+.desk-wallet-current-top strong{font-weight:760;font-size:13px}
+.desk-wallet-current-top small{font:650 11px var(--font-mono),monospace;margin-top:4px;color:#637b68}
+.desk-wallet-current>span{font:730 10px var(--font-mono),monospace;display:block;padding:10px 0;margin-top:12px}
+.desk-wallet-current>span.ok{color:#39774c}.desk-wallet-current>span.wrong{color:#ad603d}
+.desk-wallet-switch{display:block;background:#c65b3f;color:#fff;padding:12px;width:100%;font:740 10px var(--font-mono),monospace!important;margin-top:6px}
+.desk-wallet-disconnect{display:flex;align-items:center;gap:9px;border-top:1px solid #dce2d6;padding:15px 2px 2px;margin-top:12px;width:100%;font:680 11px var(--font-mono),monospace!important;color:#785f55;text-align:left}
+.desk-wallet-error{display:flex;gap:8px;align-items:flex-start;margin:13px 0 0!important;color:#a34f38;font-size:11px;line-height:1.5}
+.desk-wallet-error svg{flex:none}
+.desk-wallet-disclaimer{font-size:10px!important;line-height:1.6!important;color:#849083!important;border-top:1px solid #dde2d8;padding-top:13px;margin-top:12px!important}
+.desk-sim-wallet-connected{margin-top:22px;border:1px solid #b7c5b2;background:#f9f7f0;padding:18px}
+.desk-sim-wallet-connected>span{font:730 9px var(--font-mono),monospace;letter-spacing:.1em;color:#68806b;display:block}
+.desk-sim-wallet-connected>strong{display:block;font:700 13px var(--font-mono),monospace;color:#2f5640;overflow-wrap:anywhere;margin:14px 0 9px}
+.desk-sim-wallet-connected>small{font-size:11px;line-height:1.65;color:#6b806b;display:block}
+.desk-sim-wallet-connected>.desk-wallet-control{margin-top:17px;display:inline-block;max-width:100%}
+.desk-sim-wallet-connected>p{font-size:11px;color:#a55e42;margin-top:9px}
+@media(min-width:1050px) and (max-width:1430px){.desk-header-inner{gap:10px}.desk-nav{gap:0}.desk-nav>a{padding:0 8px;font-size:11px}.desk-header-actions{gap:11px}.desk-wallet-trigger{padding:9px 10px;font-size:10px!important}}
+@media(max-width:1050px){.desk-header .desk-wallet-menu{right:-40px}.desk-header-actions{gap:10px}}
+@media(max-width:620px){.desk-header .desk-wallet-trigger{padding:10px 9px}.desk-header .desk-wallet-trigger>span{max-width:92px;overflow:hidden;text-overflow:ellipsis}.desk-wallet-menu{width:min(318px,calc(100vw - 30px))}.desk-header .desk-wallet-menu{right:-45px}}

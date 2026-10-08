@@ -4,6 +4,8 @@ import {usePathname} from 'next/navigation';
 import {ArrowUpRight,Check,Menu,RefreshCw,X} from 'lucide-react';
 import {useState} from 'react';
 import {DeskProvider,useDesk} from './DeskContext';
+import {WalletProvider} from './WalletContext';
+import {WalletControls} from './WalletControls';
 const LINKS=[{href:'/sentinel',name:'The Brief',no:'01'},{href:'/sentinel/demo',name:'Guided Demo',no:'02'},{href:'/sentinel/markets',name:'Market Index',no:'03'},{href:'/sentinel/baskets',name:'Basket Studio',no:'04'},{href:'/sentinel/review',name:'Execution Review',no:'05'},{href:'/sentinel/execute',name:'Simulation Lab',no:'06'}];
 function Shell({children}:{children:React.ReactNode}){
  const path=usePathname();
@@ -30,6 +32,7 @@ function Shell({children}:{children:React.ReactNode}){
      })}
     </nav>
     <div className="desk-header-actions">
+     <WalletControls/>
      <span className={'desk-feed '+feed}><span className="desk-feed-dot"/>{feed==='live'?'Feed connected':feed==='connecting'?'Connecting…':feed==='stale'?'Stale feed':'Feed unavailable'}</span>
      <button className="desk-mobile-toggle" type="button" aria-label={mobile?'Close menu':'Open menu'} aria-expanded={mobile} onClick={()=>setMobile(x=>!x)}>{mobile?<X size={20}/>:<Menu size={20}/>}</button>
     </div>
@@ -43,4 +46,4 @@ function Shell({children}:{children:React.ReactNode}){
   </div></footer>
  </div>;
 }
-export function DeskApp({children}:{children:React.ReactNode}){return <DeskProvider><Shell>{children}</Shell></DeskProvider>;}
+export function DeskApp({children}:{children:React.ReactNode}){return <DeskProvider><WalletProvider><Shell>{children}</Shell></WalletProvider></DeskProvider>;}

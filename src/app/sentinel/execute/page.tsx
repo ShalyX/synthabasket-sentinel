@@ -1,6 +1,8 @@
 'use client';
 import Link from 'next/link';
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
+import {useWallet} from '@/components/sentinel/WalletContext';
+import {WalletControls} from '@/components/sentinel/WalletControls';
 import {ArrowLeft,ArrowRight,CheckCircle2,Clock3,LockKeyhole,RefreshCw,ShieldAlert,ShieldCheck,TriangleAlert,XCircle} from 'lucide-react';
 import {useDesk} from '@/components/sentinel/DeskContext';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
@@ -63,27 +65,33 @@ interface WalletBalances {
  bnbCoversStressScenario:boolean|null;
  noTransactions:true;
 }
-type BalanceCheck={walletAddress:string;amountUsd:number;gasLimit:string|null;data:WalletBalances};
+type BalanceCheck={sessionKey:string;walletAddress:string;amountUsd:number;gasLimit:string|null;data:WalletBalances};
 
 const fmt=(n:number|null,d=8)=>n==null?'—':n.toLocaleString('en-US',{maximumFractionDigits:d});
 const expiry=(raw:string)=>new Date(raw).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
 export default function ExecutionLab(){
  const {basket,snapshot,feed,error,refresh}=useDesk();
+ const wallet=useWallet();
  // Simulation-only spend: intentionally independent of the investor's larger Basket Studio budget.
- const [budget,setBudget]=useState(25),[receiver,setReceiver]=useState('');
+ const [budget,setBudget]=useState(25);
+ const receiver=wallet.address??'';
  const [running,setRunning]=useState(false),[observations,setObservations]=useState<Observation[]>([]);
  const [runId,setRunId]=useState(0);
+ const [evidenceKey,setEvidenceKey]=useState<string|null>(null);
  const [checkingBalances,setCheckingBalances]=useState(false);
  const [balanceCheck,setBalanceCheck]=useState<BalanceCheck|null>(null);
  const [balanceError,setBalanceError]=useState<string|null>(null);
  const runRef=useRef(false);
+ const runAbort=useRef<AbortController|null>(null);
+ const fundingAbort=useRef<AbortController|null>(null);
+ const [nowMs,setNowMs]=useState(0);
  const legs=basket.map(b=>({...b,amountUsd:amountFor(budget,b),
   token:snapshot?.tokens.find(x=>x.ticker===b.ticker&&x.platform===b.platform)}));
  const total=legs.reduce((a,b)=>a+b.amountUsd,0);
  const outOfBounds=legs.some(x=>x.amountUsd<1||x.amountUsd>SIMULATION_MAX_LEG_USDT);
  const missing=legs.some(x=>!x.token||x.token.tradingAvailable!==true);
- const addressOK=validAddress(receiver.trim());
+ const addressOK=wallet.ready&&validAddress(receiver);
  const basketOK=legs.length>0&&!missing;
  const budgetOK=basketOK&&!outOfBounds&&total<=SIMULATION_MAX_BASKET_USDT;
  const issue=feed!=='live'?'Live BSC market inventory must be available.':
@@ -91,14 +99,37 @@ export default function ExecutionLab(){
   missing?'An issuer contract is missing or not marked open.':
   total>SIMULATION_MAX_BASKET_USDT?'The simulation basket limit is $50 USDT. Reduce the basket budget.':
   outOfBounds?'Each simulation leg must be between $1 and $25 USDT.':
-  !addressOK?'Enter a valid public BSC sender address (0x followed by 40 hex characters).':null;
- const complete=observations.length===legs.length&&observations.length>0&&observations.every(x=>x.status==='pass');
- const blocked=observations.some(x=>x.status==='blocked');
- const latestBuiltGas=[...observations].reverse().find(x=>x.receipt?.gasLimit)?.receipt?.gasLimit??null;
- const currentBalanceCheck=balanceCheck&&balanceCheck.walletAddress===receiver.trim()&&balanceCheck.amountUsd===total&&balanceCheck.gasLimit===latestBuiltGas?
+  !wallet.address?'Connect a wallet to bind simulation to your actual account.':
+  !wallet.ready?'Switch your connected wallet to BSC mainnet (chain 56).':
+  !addressOK?'The connected wallet address is invalid. Reconnect.':null;
+ const operationKey=wallet.sessionKey+'|'+feed+'|'+budget+'|'+legs.map(x=>
+  x.ticker+':'+x.platform+':'+x.amountUsd+':'+(x.token?.address??'?')+':'+String(x.token?.tradingAvailable)).join(';');
+ const scopedObservations=evidenceKey===operationKey?observations:[];
+ const complete=scopedObservations.length===legs.length&&scopedObservations.length>0&&scopedObservations.every(x=>
+  x.status==='pass'&&!!x.receipt&&Date.parse(x.receipt.expiresAt)>nowMs);
+ const blocked=scopedObservations.some(x=>x.status==='blocked');
+ const expired=scopedObservations.some(x=>x.receipt&&Date.parse(x.receipt.expiresAt)<=nowMs);
+ const latestBuiltGas=[...scopedObservations].reverse().find(x=>x.receipt?.gasLimit)?.receipt?.gasLimit??null;
+ const currentBalanceCheck=balanceCheck&&balanceCheck.sessionKey===wallet.sessionKey&&
+  balanceCheck.walletAddress===receiver&&balanceCheck.amountUsd===total&&balanceCheck.gasLimit===latestBuiltGas?
   balanceCheck.data:null;
+ const currentOperation=useRef(operationKey);
+ currentOperation.current=operationKey;
+ useEffect(()=>{
+  runAbort.current?.abort();
+  fundingAbort.current?.abort();
+  setObservations([]);setBalanceCheck(null);setBalanceError(null);
+ },[operationKey]);
+ useEffect(()=>{
+  setNowMs(Date.now());
+  const id=window.setInterval(()=>setNowMs(Date.now()),1000);
+  return()=>window.clearInterval(id);
+ },[]);
  async function checkBalances(){
   if(checkingBalances||!addressOK||!budgetOK)return;
+  const key=operationKey;
+  const controller=new AbortController();
+  fundingAbort.current=controller;
   setCheckingBalances(true);setBalanceError(null);setBalanceCheck(null);
   try{
    const walletAddress=receiver.trim();
@@ -106,31 +137,37 @@ export default function ExecutionLab(){
    const response=await fetch('/api/sentinel/wallet-readiness',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({walletAddress,amountUsd:total,gasLimit}),
-    cache:'no-store',signal:AbortSignal.timeout(11000)
+    cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(11000)])
    });
    const data=await response.json();
+   if(controller.signal.aborted||currentOperation.current!==key)return;
    if(!response.ok||data.kind!=='sentinel.bsc.readonly-wallet-balances')
     throw new Error(typeof data.error==='string'?data.error:'Could not verify balances on BSC mainnet.');
-   setBalanceCheck({walletAddress,amountUsd:total,gasLimit,data:data as WalletBalances});
+   setBalanceCheck({sessionKey:wallet.sessionKey,walletAddress,amountUsd:total,gasLimit,data:data as WalletBalances});
   }catch(error){
-   setBalanceError(error instanceof Error&&error.name!=='TimeoutError'?
+   if(!controller.signal.aborted&&currentOperation.current===key)setBalanceError(error instanceof Error&&error.name!=='TimeoutError'?
     error.message:'BSC balance check timed out; balances remain unknown.');
-  }finally{setCheckingBalances(false);}
+  }finally{if(fundingAbort.current===controller)fundingAbort.current=null;setCheckingBalances(false);}
  }
  async function runSimulation(){
-  if(runRef.current||issue)return;
-  runRef.current=true;setRunning(true);setObservations([]);setRunId(n=>n+1);
+  if(runRef.current||issue||!wallet.ready)return;
+  const key=operationKey;
+  const controller=new AbortController();
+  runAbort.current=controller;
+  runRef.current=true;setRunning(true);setEvidenceKey(key);setObservations([]);setRunId(n=>n+1);
   const history:Observation[]=[];
   try{
    for(const leg of legs){
+    if(controller.signal.aborted||currentOperation.current!==key)break;
     history.push({ticker:leg.ticker,status:'running'});setObservations([...history]);
     try{
      const body=JSON.stringify({ticker:leg.ticker,platform:leg.platform,amountUsd:leg.amountUsd,walletAddress:receiver.trim()});
      const response=await fetch('/api/sentinel/simulate',{
       method:'POST',headers:{'Content-Type':'application/json'},body,
-      cache:'no-store',signal:AbortSignal.timeout(55000)
+      cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(55000)])
      });
      const data=await response.json();
+     if(controller.signal.aborted||currentOperation.current!==key)break;
      if(!response.ok||data.kind!=='sentinel.bsc.sandbox-preflight'){
       history[history.length-1]={ticker:leg.ticker,status:'blocked',
        reason:typeof data.error==='string'?data.error:'Transaction build or simulation was unavailable.'};
@@ -144,13 +181,14 @@ export default function ExecutionLab(){
      setObservations([...history]);
      if(!passed)break; // fail closed; no later leg is attempted after a blocked one.
     }catch(e){
+     if(controller.signal.aborted||currentOperation.current!==key)break;
      history[history.length-1]={ticker:leg.ticker,status:'blocked',
       reason:e instanceof Error&&e.name==='TimeoutError'?'Simulation timed out. No transaction was sent.':
        'Simulation request could not complete. No transaction was sent.'};
      setObservations([...history]);break;
     }
    }
-  }finally{runRef.current=false;setRunning(false);}
+  }finally{if(runAbort.current===controller)runAbort.current=null;runRef.current=false;setRunning(false);}
  }
  return <div className="desk-wrap desk-internal-page desk-sim-lab">
   <div className="desk-breadcrumb"><Link href="/sentinel">THE BRIEF</Link><span>→</span><Link href="/sentinel/baskets">BASKET STUDIO</Link><span>→</span><Link href="/sentinel/review">EXECUTION REVIEW</Link><span>→</span><b>SIMULATION LAB</b></div>
@@ -167,7 +205,7 @@ export default function ExecutionLab(){
     {legs.length===0&&<BlankState title="No basket instruction yet." description="The simulator does not invent a basket. Select actual BSC stock tokens first." action={<Link href="/sentinel/baskets" className="desk-button-ink">Build a basket <ArrowRight size={16}/></Link>}/>}
     <div className="desk-sim-list">
      {legs.map((leg,i)=>{
-      const observation=observations.find(x=>x.ticker===leg.ticker);
+      const observation=scopedObservations.find(x=>x.ticker===leg.ticker);
       const data=observation?.receipt;
       return <article className={'desk-sim-leg '+(observation?.status||'waiting')} key={leg.ticker}>
        <div className="desk-sim-leg-top">
@@ -179,6 +217,7 @@ export default function ExecutionLab(){
        <div className="desk-sim-leg-stage">
         <span>QUOTE</span><ArrowRight size={14}/><span>BUILD SWAP TX</span><ArrowRight size={14}/><span>SIMULATE</span>
         <span className={'desk-sim-chip '+(observation?.status||'waiting')}>{observation?.status==='running'?'PROCESSING':
+         observation?.status==='pass'&&data&&Date.parse(data.expiresAt)<=nowMs?'EXPIRED · RE-RUN':
          observation?.status==='pass'?'SIMULATION PASSED':observation?.status==='blocked'?'BLOCKED':'NOT REQUESTED'}</span>
        </div>
        {data&&<div className="desk-sim-result">
@@ -193,27 +232,33 @@ export default function ExecutionLab(){
         <div><span>QUOTE VALID UNTIL</span><strong>{expiry(data.expiresAt)} · result is a time-bound simulation</strong></div>
        </div>}
        {observation?.status==='blocked'&&<p className="desk-sim-failure" role="alert"><XCircle size={16}/>{observation.reason||'Simulation blocked. No trade was submitted.'}</p>}
-       {observation?.status==='pass'&&<p className="desk-sim-okay"><CheckCircle2 size={17}/> Transaction API predicted success. No wallet permission or real execution occurred.</p>}
+       {observation?.status==='pass'&&<p className="desk-sim-okay"><CheckCircle2 size={17}/> {data&&Date.parse(data.expiresAt)<=nowMs?
+        'This simulation has expired and cannot be reused. Run it again with a fresh quote.':
+        'Transaction API predicted success. No wallet permission or real execution occurred.'}</p>}
       </article>;
      })}
     </div>
     <div className={'desk-sim-final '+(complete?'complete':blocked?'blocked':'pending')}>
      {complete?<ShieldCheck size={28}/>:blocked?<TriangleAlert size={28}/>:<Clock3 size={28}/>}
-     <div><strong>{complete?'ALL SELECTED LEGS SIMULATED · ZERO TRADES':blocked?'PREFLIGHT STOPPED · NO TRADE SENT':'AWAITING AN EXPLICIT SIMULATION'}</strong>
+     <div><strong>{complete?'ALL SELECTED LEGS SIMULATED · ZERO TRADES':expired?'QUOTE EXPIRED · NEW SIMULATION REQUIRED':blocked?'PREFLIGHT STOPPED · NO TRADE SENT':'AWAITING AN EXPLICIT SIMULATION'}</strong>
       <p>{complete?'Each issuer-specific transaction was built and simulated from a live quote. This is predicted execution only, not a wallet approval, a position or an onchain receipt.':
+       expired?'One or more quote windows have elapsed. Archived results are reference-only; simulate again with fresh quotes and the active connected wallet.':
        blocked?'The pipeline stopped at the first blocked leg. Check funding, allowance, gas, route constraints or expiry and re-run after making a user-approved change.':
        'The official simulation endpoint receives genuine unsigned BSC transaction calldata only when you initiate this read-only test.'}</p>
      </div>
     </div>
    </section>
    <aside className="desk-sim-rail">
-    <div className="desk-sim-rail-head"><span>02 / RUN AUTHORIZATION</span><h2>A wallet address<br/>is <em>not a wallet key.</em></h2><p>Simulate against the public address you intend to use for the eventual trade. This stage never requests a signature, approval, trade or transaction broadcast.</p></div>
-    <label className="desk-sim-wallet" htmlFor="desk-sim-address"><span>PUBLIC BSC ADDRESS / TRANSACTION SENDER</span>
-     <input id="desk-sim-address" type="text" inputMode="text" value={receiver} disabled={running}
-      onChange={e=>{setReceiver(e.target.value.trim());setObservations([]);}}
-      autoComplete="off" spellCheck={false} placeholder="0x… public address only"/>
-     <small>Sent only to Binance's read-only quote/build/simulate endpoints after clicking the button. Never paste a seed phrase or private key. Nothing is saved to browser storage.</small>
-    </label>
+    <div className="desk-sim-rail-head"><span>02 / WALLET-BOUND PREFLIGHT</span><h2>Connect once.<br/><em>Simulate the right account.</em></h2><p>The connected BSC account is the sole sender for quotes, transaction builds, and simulation. Switch accounts or networks and the old results are invalidated automatically.</p></div>
+    <section className="desk-sim-wallet-connected" aria-label="Wallet for simulation">
+     <span>ACTIVE BSC TRANSACTION SENDER</span>
+     {wallet.address?<strong>{receiver}</strong>:<strong>NOT CONNECTED</strong>}
+     <small>{wallet.ready?'Verified wallet connection · chain 56 · no signature requested':
+      wallet.address?'Connected on another network. Switch to BSC mainnet to simulate.':
+      'Connect a browser wallet here or in the header. Guest market research remains open.'}</small>
+     <WalletControls/>
+     {wallet.error&&<p role="alert">{wallet.error}</p>}
+    </section>
     <div className="desk-sim-preflight" aria-live="polite">
      <div className="desk-sim-preflight-top"><strong>BEFORE SIMULATION</strong><span>{issue?'ACTION REQUIRED':'READY TO SIMULATE'}</span></div>
      <div className="desk-sim-preflight-item"><span className={feed==='live'?'ready':'pending'}>{feed==='live'?'✓':'!'}</span>
@@ -236,12 +281,13 @@ export default function ExecutionLab(){
       {budget!==25&&<button type="button" disabled={running} onClick={()=>{setBudget(25);setObservations([]);}}>Use safe $25 test</button>}
      </div>}
      <div className="desk-sim-preflight-item"><span className={addressOK?'ready':'pending'}>{addressOK?'✓':'!'}</span>
-      <div><strong>Public BSC sender address</strong><small>{addressOK?'Format verified · no wallet connection or signature required':'Enter a valid 0x address in the field above'}</small></div>
+      <div><strong>Connected BSC sender</strong><small>{addressOK?'Wallet account and chain 56 selected · simulation only':
+       wallet.address?'Wrong network · switch wallet to BSC mainnet':'Connect a wallet above to continue'}</small></div>
      </div>
     </div>
     <section className="desk-sim-funding" aria-label="Read-only wallet funding check">
      <div className="desk-sim-funding-head">
-      <div><strong>03 / ONCHAIN FUNDING DIAGNOSTIC</strong><p>Check public BSC balances without connecting or unlocking a wallet.</p></div>
+      <div><strong>03 / ONCHAIN FUNDING DIAGNOSTIC</strong><p>Read public balances for the connected BSC account. No signing or unlocking required.</p></div>
       <button type="button" onClick={()=>void checkBalances()}
        disabled={checkingBalances||running||!addressOK||!budgetOK}>
        {checkingBalances?'CHECKING…':currentBalanceCheck?'Refresh funding check':'Check BSC balances & gas'}
