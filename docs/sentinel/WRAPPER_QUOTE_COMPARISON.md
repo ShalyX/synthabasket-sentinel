@@ -89,3 +89,18 @@ Accessibility/motion: the lifetime track is a labeled 0–30 second progressbar;
     npx tsx --test src/lib/sentinel/wrapper-comparison.test.ts
 
 Tests include the eight-second warning boundary, strict expiry at zero seconds, and historical reconstruction only for previously valid overlapping quote pairs. Browser QA uses locally intercepted synthetic quote responses and a shifted test-browser clock, never fabricated requests sent to Binance.
+
+### Deployed end-to-end browser verification — October 8, 2026
+
+Production commit **f1278d5** was READY on Vercel in Singapore **sin1**; GitHub CI was SUCCESS. An isolated Windows Chrome DevTools browser loaded the **actual production page and live BSC issuer inventory** and locally intercepted only the quote POST requests with clearly **synthetic QA response objects** (using the owner's earlier observed token outputs). No artificial wallet address or quote request was sent to Binance.
+
+The browser test demonstrated:
+- Initial view showed the live inventory, both issuer cards, disabled combined quote action until a valid public receiver was entered.
+- Two synthetic $10 quote POST responses rendered the live normalized wrapper comparison. Four total intercepted requests were observed after using the refresh recovery action.
+- At a test-clock offset of +23 seconds, the UI entered **closing** and showed **CLOSING SOON · 6s** while retaining the still-valid live result.
+- At +31 seconds, it entered **expired**, set the accessibility progress value to **0**, hid the live headline and active normalized values, and showed a clearly marked **REFERENCE ONLY / PREVIOUS OBSERVATION** with the expired results.
+- The **Get fresh comparison** control successfully restored an active pair and removed the expired archive.
+- On a **390px** browser viewport, measured document width was **390px** (no horizontal overflow).
+- **34** TypeScript model/policy tests, **10** Node security/deployment tests, a TypeScript check, and Vercel/GitHub production builds passed.
+
+These results verify only the new browser UX and its logic. They are not evidence of new live Binance prices or any transaction execution.
