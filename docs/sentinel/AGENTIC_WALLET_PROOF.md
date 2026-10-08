@@ -40,6 +40,10 @@ node scripts/agentic-wallet-readonly.mjs quote 0x02fca66c1d1afb4e2a7884261eb00f6
 
 The address was observed historically as a BSC NVDAB contract; do not treat it as permanently verified. This quote path has **not** yet been live-tested in the newly paired CLI session. The wrapper enforces an allowlist and cannot sign, approve, submit, swap, broadcast, or place orders. It redacts raw wallet data and does not expose an Agentic Wallet session through a public Next.js route.
 
+## New: local quote observation handoff
+
+The standalone Sentinel dossier offers an optional, owner-operated market-order quote command. Its stdout is piped to the **local-only** script scripts/agentic-wallet-quote-handoff.mjs, which strips raw data, writes an untrusted, sanitized observation file, and permits a client-side comparison to a **fresh Binance Web3 hosted quote**. No Agentic Wallet CLI quote has yet been successfully live-observed through this new handoff. See [AGENTIC_QUOTE_HANDOFF.md](./AGENTIC_QUOTE_HANDOFF.md). This file is **not a wallet attestation or trade authorization**.
+
 ## Session renewal
 
 Session authorization must originate in the owner's Binance app. If disconnected or expired:

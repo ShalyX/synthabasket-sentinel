@@ -4,6 +4,7 @@ import {useParams,useRouter} from 'next/navigation';
 import {useEffect,useMemo,useState} from 'react';
 import {ArrowLeft,ArrowRight,ArrowUpRight,Check,Clock3,Info,Plus,RefreshCw} from 'lucide-react';
 import {useDesk,useStock} from '@/components/sentinel/DeskContext';
+import {AgenticQuoteHandoff} from '@/components/sentinel/AgenticQuoteHandoff';
 import {BlankState,ClearBanner,Eyebrow,SourceStamp,TokenMark} from '@/components/sentinel/DeskBits';
 import {formatBasis,formatUsd,type Equity,type Platform,type QuotePreview} from '@/lib/sentinel/model';
 import {previewIsFresh} from '@/lib/sentinel/policy';
@@ -65,6 +66,7 @@ export default function EquityDossier(){
      </article>;
     })}
    </section>
+   <AgenticQuoteHandoff ticker={ticker} tokens={issuerList} quotes={quotes} now={now}/>
    <section className="desk-dossier-context"><div><Eyebrow>READING THE RECORD</Eyebrow><h2>Two marks.<br/><em>One underlying.</em></h2></div><p>Token price, stock reference, and token-to-share ratio serve different purposes. A small basis does not guarantee depth or execution, and an open issuer status does not establish your personal eligibility. Quotes must be requested at the time of evaluation.</p><div className="desk-dossier-context-form"><label htmlFor="desk-dossier-wallet">PUBLIC EVM WALLET / OPTIONAL FOR RFQ</label><input id="desk-dossier-wallet" value={wallet} onChange={e=>{setWallet(e.target.value);setQuotes({});}} placeholder="0x… only, never your private key" autoComplete="off"/><span>This address is sent only with an explicit quote request, not saved to your account or browser storage.</span></div></section>
    <div className="desk-dossier-bottom"><Link href="/sentinel/markets"><ArrowLeft size={16}/> All stocks</Link><Link href="/sentinel/baskets">Open basket studio <ArrowRight size={17}/></Link></div>
   </>}

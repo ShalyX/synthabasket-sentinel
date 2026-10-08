@@ -15,6 +15,7 @@ Sentinel separates the research process into distinct areas:
 3. **Instrument Dossier** — contract, token-to-share conversion ratio, reference parity and optional quote checks.
 4. **Basket Studio** — four-leg maximum allocations with explicit issuers, weights summing to 100%, and a proposed USDT budget.
 5. **Execution Review** — short-lived Binance Web3 quote requests, deterministic fail-closed guards and an independently validated **local wallet readiness file**.
+6. **Agentic Wallet second opinion** — the instrument dossier generates an optional quote-only command for the owner's paired PC. The official CLI's response can be locally sanitized and imported to compare against a fresh hosted quote for the same contract. The wallet session never reaches Vercel. This handoff is **user-operated and not yet validated with a live Agentic Wallet CLI quote**; see [instructions](docs/sentinel/AGENTIC_QUOTE_HANDOFF.md).
 
 **Not a trading application:** No automated trading, signed messages, token approvals, on-chain transfers, wallet custody, or Agent Studio runtime. A read-only Binance Agentic Wallet CLI integration has been tested **locally**, and the site's imported diagnostic is not authorization to transact.
 
@@ -52,7 +53,7 @@ If your hosting is restricted, the app displays an unavailable feed rather than 
 
 ```sh
 npx tsx --test src/lib/sentinel/*.test.ts
-node --test scripts/agentic-wallet-readonly.test.mjs scripts/agentic-wallet-diagnostic.test.mjs
+node --test scripts/agentic-wallet-readonly.test.mjs scripts/agentic-wallet-diagnostic.test.mjs scripts/agentic-wallet-quote-handoff.test.mjs
 npx tsc --noEmit
 npm run build
 ```
