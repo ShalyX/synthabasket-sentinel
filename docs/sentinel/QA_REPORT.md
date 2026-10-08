@@ -51,3 +51,20 @@ This repository was extracted into a new independent root commit, excluding the 
 6. **Limit:** Historical US hosting 40304 failures remain true, and Singapore connection success does not prove Binance's approved hosting/jurisdiction policy. No live Binance Agentic Wallet quote, token approval, transaction signature or swap was requested.
 
 Earlier entries stating current Sentinel production lacked Binance credentials are historical and no longer reflect the October 8 Singapore deployment.
+
+## Singapore signed venue quote verification — October 8, 2026
+
+**Read-only, not trading.** From actual live BSC inventory with the selected token tradingAvailable=true, a read-only pricing request was sent to POST https://synthabasket-sentinel.vercel.app/api/sentinel/quote with ticker NVDA, platform bstock, amountUsd 5. No walletAddress or authorization data was in the client request.
+
+The quote endpoint validates real Binance BSC inventory and requests a signed upstream GET to the Binance Web3 aggregator quote endpoint (not a transaction submission route). Observed:
+- HTTP **200**
+- Runtime response header X-Vercel-Id begins **cdg1::sin1::** (Singapore).
+- Underlying NVDA, provider bStocks.
+- **LiquidMesh** venue, reported **SWAP** execution mode. This is a proposed route description, **not an executed swap**.
+- Requested budget 5 USDT; nonzero quoted token amount present.
+- Sentinel risk-policy state: **review**, which is not authorization to execute.
+- Quote observation time 2026-10-08T13:16:34.551Z.
+
+**Nothing signed, approved, swapped, submitted or transferred**. A live Binance Agentic Wallet CLI quote is still a separate, unverified integration.
+
+Vercel source now pins the sole function region as Singapore (sin1) in standalone vercel.json, and CI includes a region-contract test; post-deployment region metadata and response headers remain the runtime authority.

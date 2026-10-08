@@ -22,6 +22,10 @@ Sentinel separates the research process into distinct areas:
 
 **Live BSC market inventory connected (verified October 8, 2026).** The independent Sentinel Vercel production project runs its API in Singapore (`sin1`) with two sensitive, production-scoped Binance Web3 Gateway credentials. The signed, read-only `/api/sentinel/markets` request returned HTTP **200**, with **488 issuer-specific token contracts** across **448 underlying tickers**. Browser verification confirmed the Market Index showed `Feed connected`, 488 contracts and 448 tickers. Binance's `40304` still applied to earlier US-hosted attempts; successful Singapore connectivity is **not** proof of Binance's formal jurisdiction/hosting approval. No prices are invented, and no wallet signatures, token approvals, live Agentic Wallet quotes or swaps were executed. See [hosting investigation](docs/sentinel/HOSTING_STATUS.md) and [judge reproduction instructions](docs/sentinel/JUDGE_RUNBOOK.md).
 
+### Read-only venue quote verified
+
+On October 8, Sentinel's **Singapore-hosted Binance Web3 aggregator** returned an HTTP 200 quote for **5 USDT to NVDA (bStocks)**, SWAP route via **LiquidMesh**, with a nonzero token amount and Sentinel policy state `review`. This is **a quote only**: no wallet address, transaction signing, approval or swap was involved. The Binance Agentic Wallet CLI quote remains unverified. Singapore is pinned for deployments in `vercel.json`; Vercel runtime response headers independently confirmed the function's `sin1` execution region.
+
 ## Local reproduction
 
 Requirements: Node.js **22.x**, npm. Live Binance Web3 RWA data requires a legitimately supported account/hosting location and your own developer keys; do not route around geographic restrictions.

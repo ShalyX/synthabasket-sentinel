@@ -26,6 +26,8 @@ jobs:
         run: npx tsx --test src/lib/sentinel/*.test.ts
       - name: Agentic Wallet read-only adapter tests
         run: node --test scripts/agentic-wallet-readonly.test.mjs scripts/agentic-wallet-diagnostic.test.mjs
+      - name: Singapore deployment region contract
+        run: node --test scripts/deployment-region.test.mjs
       - name: Type check
         run: npx tsc --noEmit
       - name: Production build

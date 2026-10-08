@@ -7,7 +7,7 @@
 
 ## Honest deployment status
 
-**Live research feed verified October 8, 2026.** The independent Vercel deployment now executes its server function in Singapore (`sin1`) and stores its Binance API key and signing secret as **sensitive, Production-only environment variables**. A read-only signed market-inventory request returned **HTTP 200**, **488 BSC issuer contracts**, and **448 underlying tickers**. The actual browser Market Index showed `Feed connected` and the same counts. Historical US-hosted requests failed with compliance code `40304`; successful access from Singapore does not establish formal hosting/jurisdiction approval. This is real read-only market discovery, **not** a proven live quote, order, approval or swap. See HOSTING_STATUS.md.
+**Live research feed verified October 8, 2026.** The independent Vercel deployment now executes its server function in Singapore (`sin1`) and stores its Binance API key and signing secret as **sensitive, Production-only environment variables**. A read-only signed market-inventory request returned **HTTP 200**, **488 BSC issuer contracts**, and **448 underlying tickers**. The actual browser Market Index showed `Feed connected` and the same counts. Historical US-hosted requests failed with compliance code `40304`; successful access from Singapore does not establish formal hosting/jurisdiction approval. This is real read-only market discovery. A separate read-only **Binance Web3 aggregator quote** also returned HTTP 200 for $5 USDT → NVDA (bStocks), SWAP route from LiquidMesh, in Singapore; **no order, approval, signing, swap or Agentic Wallet CLI quote was executed**. See HOSTING_STATUS.md.
 
 ## Run the BNB research desk
 

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import {getSentinelMarkets,UpstreamError} from '@/lib/sentinel/server';
 export const runtime='nodejs';
-// Preview-region connectivity diagnostic only; not proof of Binance usage eligibility.
-export const preferredRegion='sin1';
+// Deployment region is configured centrally in vercel.json (sin1).
 export const dynamic='force-dynamic';
 export async function GET(){
  try{return NextResponse.json(await getSentinelMarkets(),{headers:{'Cache-Control':'private, no-store'}});}
