@@ -7,7 +7,7 @@
 
 ## Honest deployment status
 
-The public Sentinel application is deployed and responds on all five product screens. Its Binance RWA market feed is **not publicly available**: the isolated Vercel project currently has no Binance developer API keys and responds with HTTP 503 and an explicit unavailable state. Earlier signed cloud-hosted requests, when the credentials were present in the original development preview, returned business error **40304** due to compliance restrictions. This is a real upstream limitation, **not** an example price feed or a successful live trade. See HOSTING_STATUS.md.
+**Live research feed verified October 8, 2026.** The independent Vercel deployment now executes its server function in Singapore (`sin1`) and stores its Binance API key and signing secret as **sensitive, Production-only environment variables**. A read-only signed market-inventory request returned **HTTP 200**, **488 BSC issuer contracts**, and **448 underlying tickers**. The actual browser Market Index showed `Feed connected` and the same counts. Historical US-hosted requests failed with compliance code `40304`; successful access from Singapore does not establish formal hosting/jurisdiction approval. This is real read-only market discovery, **not** a proven live quote, order, approval or swap. See HOSTING_STATUS.md.
 
 ## Run the BNB research desk
 

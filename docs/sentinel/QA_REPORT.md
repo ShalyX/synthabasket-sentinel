@@ -38,3 +38,16 @@ This repository was extracted into a new independent root commit, excluding the 
 - **Original STOCKLANA main remains** `281b127`, production HTTP 200. The old remote Sentinel branches and preview-only Binance credentials were explicitly removed from STOCKLANA.
 - **Present market API state:** the new Vercel project has no Binance credentials; inventory correctly returns HTTP 503. The older restricted `40304` result is a documented historical cloud-hosting experiment.
 - **Dependency isolation:** dropped unused Solana SDK/wallet/Anchor dependencies from package and regenerated lockfile. New Node 22 CI is the authoritative build verification.
+
+## Independent Singapore production market verification — October 8, 2026
+
+**Current evidence, superseding earlier preview / HTTP 503 reports:**
+
+1. Dedicated Vercel project synthabasket-sentinel is connected only to independent GitHub repository ShalyX/synthabasket-sentinel. STOCKLANA deployment and main branch were unchanged.
+2. Existing Binance developer credentials were sent through local Vercel CLI stdin as sensitive **Production-only** environment variables. No values were printed or committed.
+3. Deployment dpl_8XiwHu4eY7e6Sxi2tEVESKtc9uev reached READY, region sin1.
+4. Public read-only GET https://synthabasket-sentinel.vercel.app/api/sentinel/markets returned **HTTP 200**, response routing header beginning cdg1::sin1::, count 488 and tokens.length 488. The server authenticates its Binance Web3 RWA inventory request. No fallback/simulated feed.
+5. Actual Chrome DevTools test of the Market Index confirmed Feed connected, 488 contracts, **448 distinct underlying tickers**, 24 initial table rows (first AAL), no error banner. Browser hydration PASSED.
+6. **Limit:** Historical US hosting 40304 failures remain true, and Singapore connection success does not prove Binance's approved hosting/jurisdiction policy. No live Binance Agentic Wallet quote, token approval, transaction signature or swap was requested.
+
+Earlier entries stating current Sentinel production lacked Binance credentials are historical and no longer reflect the October 8 Singapore deployment.

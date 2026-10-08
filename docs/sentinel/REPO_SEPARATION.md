@@ -32,8 +32,8 @@ Both URLs were independently checked returning HTTP 200. The new Sentinel root r
 
 - No `.env.local`, Vercel OIDC token, Binance API keys, wallet addresses, seed phrases, or private keys were copied into Git.
 - The **two branch-specific Binance secrets** `OC_API_KEY` and `OC_SECRET_KEY` were deleted from the **original project's Preview** environment. Production environment entries belonging to STOCKLANA were untouched.
-- The new isolated Sentinel Vercel project has **no Binance API credentials configured**. Its `/api/sentinel/markets` returns an honest HTTP 503 until access is authorized.
-- Earlier signed deployments returned HTTP 451 / business `40304`; changing repository isolation does not resolve upstream compliance restrictions.
+- On October 8, the new isolated Sentinel Vercel project was given `OC_API_KEY` and `OC_SECRET_KEY` **as sensitive, production-only variables**, supplied through CLI stdin from the user's existing local credential file (never printed or committed). Its newly deployed Singapore (`sin1`) market endpoint returned signed HTTP 200 with 488 issuer contracts / 448 underlying tickers, and browser validation showed `Feed connected`. Hosting approval and user eligibility remain distinct from connectivity.
+- Earlier signed US-hosted deployments returned HTTP 451 / Binance business `40304`. The separate Singapore deployment demonstrated read-only connectivity, but repository isolation itself does not confer hosting authorization.
 - Historical feature-preview deployment URLs on the old project may persist in its deployment history; they are **not** the active Sentinel host and will not receive future Sentinel pushes.
 
 ## Reproduction and remaining gates

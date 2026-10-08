@@ -20,7 +20,7 @@ Sentinel separates the research process into distinct areas:
 
 ## Honest current availability
 
-**The publicly hosted market endpoint is not live.** Binance Web3 Gateway returned business error `40304` on cloud-hosted signed API requests. The separate Sentinel Vercel project intentionally has **no Binance API credentials** configured until an approved hosting path is established; its endpoint currently displays a clear unavailable state. No invented prices or fabricated execution fills are provided. See [hosting investigation](docs/sentinel/HOSTING_STATUS.md) and [judge reproduction instructions](docs/sentinel/JUDGE_RUNBOOK.md).
+**Live BSC market inventory connected (verified October 8, 2026).** The independent Sentinel Vercel production project runs its API in Singapore (`sin1`) with two sensitive, production-scoped Binance Web3 Gateway credentials. The signed, read-only `/api/sentinel/markets` request returned HTTP **200**, with **488 issuer-specific token contracts** across **448 underlying tickers**. Browser verification confirmed the Market Index showed `Feed connected`, 488 contracts and 448 tickers. Binance's `40304` still applied to earlier US-hosted attempts; successful Singapore connectivity is **not** proof of Binance's formal jurisdiction/hosting approval. No prices are invented, and no wallet signatures, token approvals, live Agentic Wallet quotes or swaps were executed. See [hosting investigation](docs/sentinel/HOSTING_STATUS.md) and [judge reproduction instructions](docs/sentinel/JUDGE_RUNBOOK.md).
 
 ## Local reproduction
 
