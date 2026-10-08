@@ -53,9 +53,14 @@ interface WalletBalances {
  checkedAt:string;
  allowanceChecked:false;
  gasAdequacyChecked:false;
+ gasPriceGwei:string|null;
+ estimatedSwapGasBnb:string|null;
+ bnbCoversBufferedSwapEstimate:boolean|null;
+ gasEstimateAvailable:boolean;
+ estimateScope:'LAST_BUILT_SWAP_LEG'|'UNAVAILABLE';
  noTransactions:true;
 }
-type BalanceCheck={walletAddress:string;amountUsd:number;data:WalletBalances};
+type BalanceCheck={walletAddress:string;amountUsd:number;gasLimit:string|null;data:WalletBalances};
 
 const fmt=(n:number|null,d=8)=>n==null?'—':n.toLocaleString('en-US',{maximumFractionDigits:d});
 const expiry=(raw:string)=>new Date(raw).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -86,22 +91,24 @@ export default function ExecutionLab(){
   !addressOK?'Enter a valid public BSC sender address (0x followed by 40 hex characters).':null;
  const complete=observations.length===legs.length&&observations.length>0&&observations.every(x=>x.status==='pass');
  const blocked=observations.some(x=>x.status==='blocked');
- const currentBalanceCheck=balanceCheck&&balanceCheck.walletAddress===receiver.trim()&&balanceCheck.amountUsd===total?
+ const latestBuiltGas=[...observations].reverse().find(x=>x.receipt?.gasLimit)?.receipt?.gasLimit??null;
+ const currentBalanceCheck=balanceCheck&&balanceCheck.walletAddress===receiver.trim()&&balanceCheck.amountUsd===total&&balanceCheck.gasLimit===latestBuiltGas?
   balanceCheck.data:null;
  async function checkBalances(){
   if(checkingBalances||!addressOK||!budgetOK)return;
   setCheckingBalances(true);setBalanceError(null);setBalanceCheck(null);
   try{
    const walletAddress=receiver.trim();
+   const gasLimit=latestBuiltGas;
    const response=await fetch('/api/sentinel/wallet-readiness',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({walletAddress,amountUsd:total}),
+    body:JSON.stringify({walletAddress,amountUsd:total,gasLimit}),
     cache:'no-store',signal:AbortSignal.timeout(11000)
    });
    const data=await response.json();
    if(!response.ok||data.kind!=='sentinel.bsc.readonly-wallet-balances')
     throw new Error(typeof data.error==='string'?data.error:'Could not verify balances on BSC mainnet.');
-   setBalanceCheck({walletAddress,amountUsd:total,data:data as WalletBalances});
+   setBalanceCheck({walletAddress,amountUsd:total,gasLimit,data:data as WalletBalances});
   }catch(error){
    setBalanceError(error instanceof Error&&error.name!=='TimeoutError'?
     error.message:'BSC balance check timed out; balances remain unknown.');
@@ -234,7 +241,7 @@ export default function ExecutionLab(){
       <div><strong>03 / ONCHAIN FUNDING DIAGNOSTIC</strong><p>Check public BSC balances without connecting or unlocking a wallet.</p></div>
       <button type="button" onClick={()=>void checkBalances()}
        disabled={checkingBalances||running||!addressOK||!budgetOK}>
-       {checkingBalances?'CHECKING…':currentBalanceCheck?'Refresh balances':'Check BSC balances'}
+       {checkingBalances?'CHECKING…':currentBalanceCheck?'Refresh funding check':'Check BSC balances & gas'}
        <RefreshCw size={14} className={checkingBalances?'desk-spin':undefined}/>
       </button>
      </div>
@@ -246,7 +253,13 @@ export default function ExecutionLab(){
       <div><span>BNB / GAS TOKEN</span><strong>{currentBalanceCheck.bnbBalance}</strong>
        <small className={currentBalanceCheck.bnbPresent?'sufficient':'missing'}>{currentBalanceCheck.bnbPresent?
         'Present · gas sufficiency not verified':'Zero balance · no BNB available for gas'}</small></div>
-      <p>Read-only BSC mainnet snapshot checked at {new Date(currentBalanceCheck.checkedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. Token allowance and actual gas cost are <b>not</b> checked. A positive balance is not an execution approval.</p>
+      <div><span>GAS PRICE / BSC</span><strong>{currentBalanceCheck.gasPriceGwei===null?'—':currentBalanceCheck.gasPriceGwei+' gwei'}</strong>
+       <small>Observed public RPC gas price · not a guaranteed quote</small></div>
+      <div><span>LAST BUILT SWAP / GAS BUDGET</span><strong>{currentBalanceCheck.estimatedSwapGasBnb===null?'—':currentBalanceCheck.estimatedSwapGasBnb+' BNB'}</strong>
+       <small className={currentBalanceCheck.bnbCoversBufferedSwapEstimate===false?'missing':'sufficient'}>{currentBalanceCheck.bnbCoversBufferedSwapEstimate===null?
+        'Unavailable · build & simulate first':currentBalanceCheck.bnbCoversBufferedSwapEstimate?
+        'Covers a buffered estimate · not guaranteed':'BNB below this buffered estimate'}</small></div>
+      <p>Read-only BSC mainnet snapshot checked at {new Date(currentBalanceCheck.checkedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. The gas estimate uses only the most recently built swap leg, its reported limit, and the observed gas price plus a 50% buffer. It is <b>not</b> an exact gas quote and excludes any approval transaction or other basket legs. Allowance remains unverified. No trade or wallet authorization.</p>
      </div>}
     </section>
     <div className="desk-sim-rails"><div><span>CHAIN</span><strong>BSC / 56</strong></div><div><span>INPUT TOKEN</span><strong>USDT / 18 DECIMALS</strong></div><div><span>MAX PER LEG</span><strong>$25 USDT</strong></div><div><span>MAX BASKET</span><strong>$50 USDT</strong></div><div><span>SLIPPAGE LIMIT</span><strong>0.50%</strong></div><div><span>PRICE IMPACT LIMIT</span><strong>2.00%</strong></div><div><span>SUPPORTED PATH</span><strong>LIQUIDMESH SWAP</strong></div></div>

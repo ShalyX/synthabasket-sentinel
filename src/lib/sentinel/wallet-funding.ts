@@ -18,3 +18,21 @@ export function summarizeFunding(bnb:bigint,usdt:bigint,requiredUsdt:bigint){
   noTransactions:true as const
  };
 }
+
+/** Informational, read-only estimate for a *built* BSC transaction.
+ * Includes a 50% buffer above current gasPrice x transaction gasLimit;
+ * doesn't cover additional approval transactions, gas repricing or other basket legs.
+ */
+export function estimateSwapGas(bnb:bigint,gasPrice:bigint|null,gasLimit:bigint|null){
+ if(gasPrice===null||gasPrice<=0n||gasLimit===null)
+  return {gasPriceGwei:gasPrice!==null&&gasPrice>0n?formatAtomic(gasPrice,9,4):null,
+   estimatedSwapGasBnb:null,bnbCoversBufferedSwapEstimate:null,gasEstimateAvailable:false} as const;
+ if(gasLimit<21000n||gasLimit>3000000n)throw Error('Swap gas limit outside review range.');
+ const estimatedWei=(gasPrice*gasLimit*3n+1n)/2n;
+ return {
+  gasPriceGwei:formatAtomic(gasPrice,9,4),
+  estimatedSwapGasBnb:formatAtomic(estimatedWei,18,8),
+  bnbCoversBufferedSwapEstimate:bnb>=estimatedWei,
+  gasEstimateAvailable:true as const
+ };
+}
