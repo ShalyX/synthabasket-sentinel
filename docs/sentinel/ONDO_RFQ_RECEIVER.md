@@ -27,8 +27,10 @@ Sources:
 - The Execution Review basket-side public wallet field likewise flags when a basket contains Ondo.
 - No addresses are stored in localStorage. The address is transmitted only during an explicit quote request, server-to-server Binance signing; no wallet API session, approvals, seed phrase, private key, contract write, execution request or transaction.
 
-## What remains unverified
+## Owner-confirmed Ondo success — October 8, 2026
 
-The owner has not yet supplied a public BSC wallet address in a new Ondo quote test. Therefore **we cannot claim Ondo quoting has succeeded or that providing an address alone suffices**. RFQ venue/KYC/account eligibility, trade windows, minimum notional, or other validation may still prevent a quote.
+After the public BSC receiving-address field and clearer RFQ validation were deployed, the owner retried the Ondo issuer's **Inspect $10 quote** action on the live NVDA dossier and explicitly reported **"valid quote ✅"**. This is direct user acceptance-test feedback that the Ondo quote flow now returns a valid quote in their environment. The earlier no-address test returned Binance business code `40001`.
 
-To verify: reload the deployed dossier, provide an eligible public `0x` BSC receiving address voluntarily, click the Ondo $10 quote button, and report whether it returns a valid `RFQ` / `SWAP` route or another business code. Never paste private keys, seed phrases or wallet session tokens.
+**Evidence boundary:** the report confirms a successful read-only **Ondo** quote from the user's browser. The exact received token quantity, venue, response mode (`RFQ` or `SWAP`), slippage, timestamps and any RFQ eligibility conditions were **not supplied**, so none are asserted here. No wallet address is recorded in project docs. A quote does not prove regulatory eligibility or a completed purchase.
+
+**Next verification if needed:** capture only non-sensitive quote metadata (provider, execution mode, token quantity, expiry, and reported impact) from the live UI. Never paste wallet session tokens, seed phrases, private keys or signing requests. No trade was requested or executed in this test.
