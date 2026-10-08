@@ -74,6 +74,7 @@ export function checkSwapBuild(
  raw:unknown,
  intent:SimulationIntent,
  expectedRawAmount:string,
+ expectedRawOutputAmount:string,
  expectedToTokenAddress:string,
  expectedUSDT:string
 ):Validation<CheckedEvmTransaction>{
@@ -96,7 +97,7 @@ export function checkSwapBuild(
   return {ok:false,message:'Unreasonable swap gas limit.'};
  const rr=raw.routerResult;
  if(!plain(rr)||String(rr.binanceChainId)!==SIMULATION_CHAIN||rr.vendorName!=='LiquidMesh'||
-    rr.fromTokenAmount!==expectedRawAmount||!plain(rr.fromToken)||!plain(rr.toToken)||
+    rr.fromTokenAmount!==expectedRawAmount||rr.toTokenAmount!==expectedRawOutputAmount||!plain(rr.fromToken)||!plain(rr.toToken)||
     String((rr.fromToken as Record<string,unknown>).tokenContractAddress).toLowerCase()!==expectedUSDT.toLowerCase()||
     String((rr.toToken as Record<string,unknown>).tokenContractAddress).toLowerCase()!==expectedToTokenAddress.toLowerCase())
   return {ok:false,message:'Built route differs from the approved chain, input amount or issuer contract.'};

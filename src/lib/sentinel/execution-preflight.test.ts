@@ -12,9 +12,10 @@ const ROUTER='0x'+'3'.repeat(40);
 const intent={ticker:'NVDA',platform:'bstock' as const,amountUsd:10,walletAddress:WALLET};
 const validQuote={quoteId:'quote-hash-no-key',vendorName:'LiquidMesh',executionMode:'SWAP',
  fromTokenAmount:'10000000000000000000',toTokenAmount:'42601000000000000',priceImpactPercent:'0.01'};
+const RAW_OUTPUT='42601000000000000';
 const built={executionMode:'SWAP',tx:{from:WALLET,to:ROUTER,value:'0',
  data:'0x12345678000000000000',gas:'230000'},
- routerResult:{binanceChainId:'56',vendorName:'LiquidMesh',fromTokenAmount:'10000000000000000000',
+ routerResult:{binanceChainId:'56',vendorName:'LiquidMesh',fromTokenAmount:'10000000000000000000',toTokenAmount:RAW_OUTPUT,
  fromToken:{tokenContractAddress:USDT},toToken:{tokenContractAddress:TO}}};
 const token:Equity={ticker:'NVDA',platform:'bstock',symbol:'NVDAB',address:TO,company:'NVIDIA',
  decimals:18,logoUrl:null,tokenPrice:237,referencePrice:236,tokenToShareRatio:1.0007,
@@ -60,7 +61,7 @@ test('route selection allows only quote-bound LiquidMesh SWAP, never RFQ or unex
 });
 
 test('validates sender and canonical token contract before accepting unsigned swap calldata',()=>{
- const result=checkSwapBuild(built,intent,'10000000000000000000',TO,USDT);
+ const result=checkSwapBuild(built,intent,'10000000000000000000',RAW_OUTPUT,TO,USDT);
  assert.equal(result.ok,true);
  if(result.ok){
   assert.equal(result.value.from,WALLET);
@@ -82,9 +83,10 @@ test('rejects native BNB, ERC20 approvals, arbitrary targets or mismatched route
   {...built,tx:{...built.tx,gas:'3000001'}},
   {...built,routerResult:{...built.routerResult,toToken:{tokenContractAddress:ROUTER}}},
   {...built,routerResult:{...built.routerResult,fromTokenAmount:'999'}},
+  {...built,routerResult:{...built.routerResult,toTokenAmount:'999'}},
   {...built,routerResult:{...built.routerResult,binanceChainId:'1'}},
   {...built,routerResult:{...built.routerResult,vendorName:'Other'}}
- ])assert.equal(checkSwapBuild(item,intent,'10000000000000000000',TO,USDT).ok,false);
+ ])assert.equal(checkSwapBuild(item,intent,'10000000000000000000',RAW_OUTPUT,TO,USDT).ok,false);
 });
 
 test('simulation PASS only for actual SUCCESS without revert or allowance increase',()=>{

@@ -65,7 +65,7 @@ export async function POST(req:NextRequest){
    approveTransaction:'false',
    autoSlippage:'false'
   });
-  const checked=checkSwapBuild(built,intent,rawAmount,token.address,BSC_USDT);
+  const checked=checkSwapBuild(built,intent,rawAmount,route.toTokenAmount,token.address,BSC_USDT);
   if(!checked.ok)
    return response({error:checked.message,stage:'build',executed:false},409);
   const evmTx=checked.value;
