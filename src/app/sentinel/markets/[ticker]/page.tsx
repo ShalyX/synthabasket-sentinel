@@ -5,6 +5,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {ArrowLeft,ArrowRight,ArrowUpRight,Check,Clock3,Info,Plus,RefreshCw} from 'lucide-react';
 import {useDesk,useStock} from '@/components/sentinel/DeskContext';
 import {AgenticQuoteHandoff} from '@/components/sentinel/AgenticQuoteHandoff';
+import {WrapperQuoteComparison} from '@/components/sentinel/WrapperQuoteComparison';
 import {BlankState,ClearBanner,Eyebrow,SourceStamp,TokenMark} from '@/components/sentinel/DeskBits';
 import {formatBasis,formatUsd,type Equity,type Platform,type QuotePreview} from '@/lib/sentinel/model';
 import {previewIsFresh} from '@/lib/sentinel/policy';
@@ -22,6 +23,11 @@ export default function EquityDossier(){
  const baseAsset=issuerList[0];
  const inBasket=(t:Equity)=>basket.find(b=>b.ticker===t.ticker&&b.platform===t.platform);
  const canAdd=(t:Equity)=>basket.length<4||basket.some(b=>b.ticker===t.ticker);
+ const comparisonBusy=issuerList.some(t=>quotes[t.platform]?.loading);
+ const comparisonCannotRefresh=feed!=='live'?'The live issuer inventory is unavailable.':
+  issuerList.length!==2?'This stock needs both bStocks and Ondo contracts to compare.':
+  issuerList.some(t=>t.tradingAvailable!==true)?'Both issuers must indicate trading availability.':
+  issuerList.some(t=>t.platform==='ondo')&&!publicWalletAddressValid(wallet)?'Enter a valid public BSC receiving address above to inspect both quotes.':null;
  const quote=async(token:Equity)=>{
   if(needsOndoAddress(token.platform,wallet)){
    setQuotes(q=>({...q,[token.platform]:{loading:false,error:ONDO_PUBLIC_ADDRESS_REQUIRED}}));
@@ -82,6 +88,9 @@ export default function EquityDossier(){
      </article>;
     })}
    </section>
+   {issuerList.length===2&&<WrapperQuoteComparison ticker={ticker} tokens={issuerList} quotes={quotes} now={now}
+    cannotRefreshReason={comparisonCannotRefresh} refreshing={comparisonBusy}
+    refreshBoth={()=>{if(!comparisonCannotRefresh&&!comparisonBusy)void Promise.all(issuerList.map(quote));}}/>}
    <AgenticQuoteHandoff ticker={ticker} tokens={issuerList} quotes={quotes} now={now}/>
    <section className="desk-dossier-context"><div><Eyebrow>READING THE RECORD</Eyebrow><h2>Two marks.<br/><em>One underlying.</em></h2></div><p>Token price, stock reference, and token-to-share ratio serve different purposes. A small basis does not guarantee depth or execution, and an open issuer status does not establish your personal eligibility. Quotes must be requested at the time of evaluation. Even a successful RFQ remains indicative until executed through an eligible wallet.</p></section>
    <div className="desk-dossier-bottom"><Link href="/sentinel/markets"><ArrowLeft size={16}/> All stocks</Link><Link href="/sentinel/baskets">Open basket studio <ArrowRight size={17}/></Link></div>
