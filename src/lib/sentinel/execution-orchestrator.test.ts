@@ -16,7 +16,7 @@ const inventory=[token('NVDA','bstock',a),token('AMD','ondo',b)];
 const make=(previous?:ReturnType<typeof planRehearsal>)=>{
  const p=planRehearsal(basket,inventory,address,25,now,previous?.ok?previous.value:undefined);
  assert.equal(p.ok,true);
- if(!p.ok)throw Error(p.reason);
+ if(!p.ok)throw Error('Expected a valid test plan');
  return p.value;
 };
 const proof=(leg:ReturnType<typeof make>['legs'][number]['leg'],status:'PASS'|'BLOCKED'|'UNKNOWN'='PASS')=>({
