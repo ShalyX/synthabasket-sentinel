@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {useEffect,useRef,useState} from 'react';
 import {useWallet} from '@/components/sentinel/WalletContext';
 import {WalletControls} from '@/components/sentinel/WalletControls';
+import {ExecutionAuthorization} from '@/components/sentinel/ExecutionAuthorization';
 import {ArrowLeft,ArrowRight,CheckCircle2,Clock3,LockKeyhole,RefreshCw,ShieldAlert,ShieldCheck,TriangleAlert,XCircle} from 'lucide-react';
 import {useDesk} from '@/components/sentinel/DeskContext';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
@@ -218,9 +219,9 @@ export default function ExecutionLab(){
    <div><Eyebrow>ROOM 05 / REAL TRANSACTION PREFLIGHT</Eyebrow>
     <h1>Build the trade.<br/><em>Test before spending.</em></h1>
     <p>For every basket leg, Sentinel obtains a current venue quote, asks Binance Web3 to construct the actual BSC spot transaction, then runs it through the official Transaction API simulator. No swap is signed or sent.</p></div>
-   <div className="desk-sim-lock"><LockKeyhole size={28}/><strong>0 ACTUAL ORDERS</strong><span>QUOTE → BUILD → SIMULATE</span><small>USER APPROVAL REQUIRED FOR ANY FUTURE SPEND</small></div>
+   <div className="desk-sim-lock"><LockKeyhole size={28}/><strong>SIMULATION ONLY</strong><span>QUOTE → BUILD → SIMULATE</span><small>SEPARATE USER-AUTHORIZED EXECUTION BELOW</small></div>
   </header>
-  <div className="desk-sim-band"><span>BNB SMART CHAIN · MAINNET 56</span><span>USDT → VERIFIED ISSUER TOKEN</span><span>NO EXECUTION</span></div>
+  <div className="desk-sim-band"><span>BNB SMART CHAIN · MAINNET 56</span><span>USDT → VERIFIED ISSUER TOKEN</span><span>EXPLICIT WALLET ACTIONS ONLY</span></div>
   <div className="desk-sim-layout">
    <section className="desk-sim-primary" aria-label="Execution simulation evidence">
     <div className="desk-sim-heading"><div><span>01 / SELECTED BASKET</span><h2>Every leg gets<br/><em>its own rehearsal.</em></h2></div><div className="desk-sim-budget"><span>PROPOSED TOTAL</span><strong>{formatUsd(total)}</strong><small>{legs.length} issuer-backed {legs.length===1?'leg':'legs'}</small></div></div>
@@ -357,7 +358,9 @@ export default function ExecutionLab(){
     </button>
     {issue&&<p className="desk-sim-note" role="status">{issue}</p>}
     {!issue&&<p className="desk-sim-note">Separate quote/build/simulate calls per leg. Nothing signs, approves or broadcasts. A blocked leg halts the batch.</p>}
-    <div className="desk-sim-security"><LockKeyhole size={20}/><div><b>Actual spending is gated.</b><p>Simulations do not prove you hold the tokens, that allowances exist, or that the issuer permits you to trade. Wallet-connected confirmation and verified onchain receipts are separate milestones. A passing simulation does not give the app authority to move funds.</p></div></div>
+    <ExecutionAuthorization legs={legs.map(x=>({ticker:x.ticker,platform:x.platform,amountUsd:x.amountUsd}))}
+     enabled={!running&&addressOK&&budgetOK&&feed==='live'} operationKey={operationKey}/>
+    <div className="desk-sim-security"><LockKeyhole size={20}/><div><b>Actual spending is gated.</b><p>Simulations do not prove you hold the tokens, that allowances exist, or that the issuer permits you to trade. Distinct wallet-owned approval and spend confirmations are now gated by live operator allowlists; no funds can move without the user's wallet signature. A passing simulation does not give the app authority to move funds.</p></div></div>
     <Link href="/sentinel/review" className="desk-sim-back"><ArrowLeft size={14}/> Return to quote review</Link>
    </aside>
   </div>

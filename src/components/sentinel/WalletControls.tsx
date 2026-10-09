@@ -25,7 +25,7 @@ export function WalletControls(){
   </button>
   {open&&<section className="desk-wallet-menu" aria-label="Wallet connection controls">
    <div className="desk-wallet-menu-title"><strong>WALLET / BSC MAINNET</strong>
-    <small>Connect only when you want to simulate. No transaction signatures.</small></div>
+    <small>Connect for simulation; live wallet actions require a separate explicit confirmation and operator enablement.</small></div>
    {wallet.address?<div className="desk-wallet-current">
     <div className="desk-wallet-current-top"><ShieldCheck size={17}/>
      <div><strong>{wallet.label||'Connected wallet'}</strong><small>{shortAddress(wallet.address)}</small></div>
@@ -45,7 +45,7 @@ export function WalletControls(){
      </button>)}
    </div>}
    {wallet.error&&<p className="desk-wallet-error" role="alert"><AlertCircle size={14}/>{wallet.error}</p>}
-   <p className="desk-wallet-disclaimer">Market research stays open without a wallet. The app only requests account access and can ask you to change to BSC mainnet.</p>
+   <p className="desk-wallet-disclaimer">Market research stays open without a wallet. No automatic signatures. Live actions are disabled until separately enabled and explicitly approved in your wallet.</p>
   </section>}
  </div>;
 }
