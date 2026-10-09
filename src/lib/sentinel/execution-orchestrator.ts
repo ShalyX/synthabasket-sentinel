@@ -11,9 +11,12 @@ export interface ExecutionLeg {
 export interface PreflightReceipt {
  kind:'sentinel.bsc.sandbox-preflight';chainId:56;
  ticker:string;platform:Platform;tokenContract:string;amountUsd:number;
+ symbol:string;quotedTokenAmount:number;normalizedShareUnits:number|null;routeMode:'SWAP';routeVendor:string;
+ priceImpactPct:number;maxSlippagePercent:number;gasLimit:string|null;approvalTarget:string|null;
+ builtTransaction:{present:true;dataBytes:number;nonzeroNativeValue:false};
  inspectedAt:string;expiresAt:string;
  state:'SIMULATION_PASSED'|'NOT_READY';
- simulation:{status:'PASS'|'BLOCKED'|'UNKNOWN'|'EXPIRED';reason:string|null;reportedStatus:string};
+ simulation:{status:'PASS'|'BLOCKED'|'UNKNOWN'|'EXPIRED';reason:string|null;reportedStatus:string;balanceChangeCount:number;allowanceChangeCount:number;unexpectedApprovalIncrease:boolean};
  executed:false;tradeAuthorized:false;signatureRequested:false;approvalsRequested:false;broadcastRequested:false;
 }
 export interface OrchestratorLeg {
@@ -75,13 +78,32 @@ export function validatePreflight(
    x.amountUsd!==leg.amountUsd||x.executed!==false||x.tradeAuthorized!==false||
    x.signatureRequested!==false||x.approvalsRequested!==false||x.broadcastRequested!==false)
   return {ok:false,reason:'Simulator evidence did not match the issuer, wallet-bound plan or read-only guarantees.'};
+ if(typeof x.symbol!=='string'||x.symbol.length<1||x.symbol.length>30||
+   x.routeMode!=='SWAP'||typeof x.routeVendor!=='string'||x.routeVendor.length<1||
+   typeof x.quotedTokenAmount!=='number'||!Number.isFinite(x.quotedTokenAmount)||x.quotedTokenAmount<=0||
+   !(x.normalizedShareUnits===null||(typeof x.normalizedShareUnits==='number'&&Number.isFinite(x.normalizedShareUnits)))||
+   typeof x.priceImpactPct!=='number'||!Number.isFinite(x.priceImpactPct)||
+   typeof x.maxSlippagePercent!=='number'||x.maxSlippagePercent<0||x.maxSlippagePercent>0.5||
+   !(x.gasLimit===null||(typeof x.gasLimit==='string'&&/^[0-9]{1,7}$/.test(x.gasLimit)))||
+   !(x.approvalTarget===null||validAddress(x.approvalTarget))||
+   !x.builtTransaction||typeof x.builtTransaction!=='object'||
+   (x.builtTransaction as Record<string,unknown>).present!==true||
+   typeof (x.builtTransaction as Record<string,unknown>).dataBytes!=='number'||
+   (x.builtTransaction as Record<string,unknown>).nonzeroNativeValue!==false)
+  return {ok:false,reason:'Incomplete or unrecognized unsigned transaction evidence.'};
  if(typeof x.expiresAt!=='string'||typeof x.inspectedAt!=='string'||
    !Number.isFinite(Date.parse(x.expiresAt))||!Number.isFinite(Date.parse(x.inspectedAt))||
    Date.parse(x.inspectedAt)>now+5_000||Date.parse(x.expiresAt)<Date.parse(x.inspectedAt)-30_000)
   return {ok:false,reason:'Simulator evidence has invalid timestamps.'};
  const sim=x.simulation;
  if(!sim||typeof sim!=='object'||Array.isArray(sim))return {ok:false,reason:'Simulation status missing.'};
- const status=(sim as Record<string,unknown>).status;
+ const fields=sim as Record<string,unknown>;
+ if(typeof fields.reportedStatus!=='string'||fields.reportedStatus.length>60||
+    !(fields.reason===null||typeof fields.reason==='string')||
+    !Number.isInteger(fields.balanceChangeCount)||!Number.isInteger(fields.allowanceChangeCount)||
+    typeof fields.unexpectedApprovalIncrease!=='boolean')
+  return {ok:false,reason:'Simulator balance or allowance diagnostics are missing.'};
+ const status=fields.status;
  if(!['PASS','BLOCKED','UNKNOWN','EXPIRED'].includes(String(status)))
   return {ok:false,reason:'Simulation status is unsupported.'};
  const passed=status==='PASS'&&x.state==='SIMULATION_PASSED'&&Date.parse(x.expiresAt)>now+2_000;
@@ -119,11 +141,12 @@ export async function rehearse(
     state.phase='UNAVAILABLE';onUpdate(clone(state));break;
    }
    const phase:LegPhase=check.passed?'PASS':
-    Date.parse(check.receipt.expiresAt)<=now()+2_000?'EXPIRED':'BLOCKED';
+    Date.parse(check.receipt.expiresAt)<=now()+2_000?'EXPIRED':
+    check.receipt.simulation.status==='UNKNOWN'?'UNAVAILABLE':'BLOCKED';
    state.legs[i]={...state.legs[i],phase,reason:check.passed?null:
-    reason(check.receipt.simulation.reason,'The simulator did not confirm execution.'),receipt:check.receipt};
+    reason(check.receipt.simulation.reason,phase==='EXPIRED'?'Quote expired; request a new entire-basket rehearsal.':'The simulator did not confirm execution.'),receipt:check.receipt};
    onUpdate(clone(state));
-   if(!check.passed){state.phase=phase==='EXPIRED'?'EXPIRED':'BLOCKED';break;}
+   if(!check.passed){state.phase=phase==='EXPIRED'?'EXPIRED':phase==='UNAVAILABLE'?'UNAVAILABLE':'BLOCKED';break;}
   }catch(e){
    if(signal.aborted||!isCurrent()){state.phase='INTERRUPTED';break;}
    state.legs[i]={...state.legs[i],phase:'UNAVAILABLE',reason:'Request did not complete; do not infer success.',receipt:null};
