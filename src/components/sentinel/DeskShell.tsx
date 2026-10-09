@@ -33,7 +33,7 @@ function Shell({children}:{children:React.ReactNode}){
     </nav>
     <div className="desk-header-actions">
      <WalletControls/>
-     <span className={'desk-feed '+feed}><span className="desk-feed-dot"/>{feed==='live'?'Feed connected':feed==='connecting'?'Connecting…':feed==='stale'?'Stale feed':'Feed unavailable'}</span>
+     <span className={'desk-feed '+feed}><span className="desk-feed-dot"/>{feed==='live'?(snapshot?.source==='first-party-production-readonly'?'First-party relay':'Feed connected'):feed==='connecting'?'Connecting…':feed==='stale'?'Stale feed':'Feed unavailable'}</span>
      <button className="desk-mobile-toggle" type="button" aria-label={mobile?'Close menu':'Open menu'} aria-expanded={mobile} onClick={()=>setMobile(x=>!x)}>{mobile?<X size={20}/>:<Menu size={20}/>}</button>
     </div>
    </div>

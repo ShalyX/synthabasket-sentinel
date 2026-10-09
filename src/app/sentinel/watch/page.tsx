@@ -161,7 +161,7 @@ export default function PortfolioWatch(){
      <span>CONNECTED ACCOUNT</span><WalletControls/>
      <small>{wallet.ready?wallet.address:'Connect a BSC mainnet wallet to observe its selected issuer contracts.'}</small>
     </div>
-    <div className="desk-watch-checklist"><div><span>01 / BSC ACCOUNT</span><b>{wallet.ready?'CONNECTED':wallet.address?'WRONG NETWORK':'WAITING'}</b></div><div><span>02 / SELECTED BASKET</span><b>{basket.length===0?'NOT SET':basket.length+' LEGS'}</b></div><div><span>03 / ISSUER MARKS</span><b>{feed==='live'?'LIVE SOURCE':feed.toUpperCase()}</b></div><div><span>04 / EXECUTION</span><b>LOCKED</b></div></div>
+    <div className="desk-watch-checklist"><div><span>01 / BSC ACCOUNT</span><b>{wallet.ready?'CONNECTED':wallet.address?'WRONG NETWORK':'WAITING'}</b></div><div><span>02 / SELECTED BASKET</span><b>{basket.length===0?'NOT SET':basket.length+' LEGS'}</b></div><div><span>03 / ISSUER MARKS</span><b>{feed==='live'?(snapshot?.source==='first-party-production-readonly'?'RELAYED LIVE':'LIVE SOURCE'):feed.toUpperCase()}</b></div><div><span>04 / EXECUTION</span><b>LOCKED</b></div></div>
     <button className="desk-watch-refresh" type="button" disabled={!ready||busy} onClick={()=>setManualRun(n=>n+1)}><RefreshCw size={16} className={busy?'desk-spin':''}/>{busy?'Reading chain…':'Refresh BSC snapshot'}<ArrowRight size={16}/></button>
     {error&&<p className="desk-watch-error" role="alert">{error} The prior snapshot, if present, will expire rather than being treated as live.</p>}
     <p className="desk-watch-rail-note">Silent refresh every 30 seconds only while this page is visible, plus refresh on focus. If the feed, wallet, RPC or contract read fails, no allocation or rebalance is certified.</p>

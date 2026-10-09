@@ -1,6 +1,7 @@
 import 'server-only';
 import { createHmac } from 'node:crypto';
 import {type MarketSnapshot,normalizeEquity} from './model';
+import {TRUSTED_PREVIEW_MARKET_URL,validateFirstPartyInventory} from './read-only-inventory-relay';
 const origin='https://web3.binance.com';
 export const BSC_USDT='0x55d398326f99059ff775485246999027b3197955';
 export class UpstreamError extends Error { constructor(message:string,public code:number,public httpStatus=502){super(message);} }
@@ -34,6 +35,23 @@ export async function getSentinelMarkets():Promise<MarketSnapshot>{
  if(cached&&cached.expires>Date.now())return cached.value;
  if(inFlight)return inFlight;
  inFlight=(async()=>{
+  // Preview deployments never receive the signed Binance API credentials. For
+  // read-only inventory ONLY, trust our fixed production API, which itself
+  // obtains the authenticated feed. No dynamic origin, private keys, routes,
+  // wallet data, approvals or quotes can be forwarded through this fallback.
+  if(process.env.VERCEL_ENV==='preview'&&(!process.env.OC_API_KEY||!process.env.OC_SECRET_KEY)){
+   let read:Response;
+   try{read=await fetch(TRUSTED_PREVIEW_MARKET_URL,{cache:'no-store',redirect:'error',
+     signal:AbortSignal.timeout(11_000),headers:{Accept:'application/json'}});}
+   catch{throw new UpstreamError('The canonical read-only market relay cannot be reached.',0,503);}
+   if(!read.ok)throw new UpstreamError('The canonical read-only market relay is unavailable.',0,503);
+   let raw:unknown;
+   try{raw=await read.json();}catch{throw new UpstreamError('The canonical read-only feed was unreadable.',0,503);}
+   const checked=validateFirstPartyInventory(raw,Date.now());
+   if(!checked.ok)throw new UpstreamError(checked.message,0,503);
+   cached={expires:Math.min(Date.now()+15_000,Date.parse(checked.value.asOf)+60_000),value:checked.value};
+   return checked.value;
+  }
   const response=await binanceGet('/api/v1/dex/market/rwa/tokens',{binanceChainId:'56'});
   if(!Array.isArray(response))throw new UpstreamError('Unexpected Binance stock inventory response.',0);
   const tokens=response.map(normalizeEquity).filter((v):v is NonNullable<typeof v>=>v!==null);
