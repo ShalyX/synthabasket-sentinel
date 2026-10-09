@@ -7,7 +7,7 @@ import {useWallet} from '@/components/sentinel/WalletContext';
 import {WalletControls} from '@/components/sentinel/WalletControls';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
 import {formatUsd,tokenUnits} from '@/lib/sentinel/model';
-import {assessPortfolioDrift,WATCH_REFRESH_MS,type PortfolioObservation,type DriftStatus} from '@/lib/sentinel/portfolio-watch';
+import {assessPortfolioDrift,markedValueForDisplay,WATCH_REFRESH_MS,type PortfolioObservation,type DriftStatus} from '@/lib/sentinel/portfolio-watch';
 
 type JournalRow={observedAt:string;blockNumber:string;status:DriftStatus;largestDrift:number|null;details:string};
 const percent=(n:number)=>n.toFixed(2)+'%';
@@ -125,15 +125,16 @@ export default function PortfolioWatch(){
      <div><span>ALLOCATION STATUS</span><h2>{summaryLabel}</h2>
       <p>{assessment.reason}</p>
      </div>
-     <div><span>OBSERVED MARKED VALUE</span><strong>{formatUsd(assessment.totalValueUsd)}</strong><small>{evaluable?'Selected contracts only · provider token marks':'Unavailable or not held'}</small></div>
+     <div><span>OBSERVED MARKED VALUE</span><strong>{formatUsd(assessment.totalValueUsd)}</strong><small>{assessment.status==='EMPTY'?'Confirmed zero holdings · selected contracts only':evaluable?'Selected contracts only · provider token marks':'Valuation not available'}</small></div>
     </section>
+    {assessment.status==='EMPTY'&&<div className="desk-watch-zero-guidance"><div><b>Your selection is a target, not a holding.</b><p>This wallet has zero tokens across the issuer contracts in this basket. If you hold a different supported token, choose its exact issuer in Basket Studio. No buy or rebalance is implied.</p></div><Link href="/sentinel/baskets">Review selected contracts <ArrowRight size={15}/></Link></div>}
     {!basket.length?<BlankState title="No basket to watch." description="Start with a weighted issuer-backed basket. Sentinel only monitors assets you selected." action={<Link className="desk-button-ink" href="/sentinel/baskets">Build a basket <ArrowRight size={16}/></Link>}/>:
      <div className="desk-watch-rows">
       <div className="desk-watch-table-head"><span>ISSUER / TOKEN</span><span>ONCHAIN UNITS</span><span>MARKED VALUE</span><span>ACTUAL / TARGET</span></div>
       {rows.map(({leg,token,checked,drift,quantity,index})=><div className="desk-watch-position" key={leg.ticker}>
        <div className="desk-watch-issuer"><span className="desk-watch-index">{String(index+1).padStart(2,'0')}</span><TokenMark token={token} size="small"/><div><b>{leg.ticker}</b><small>{token?.symbol||leg.ticker} · {leg.platform==='bstock'?'bStocks':'Ondo'}</small></div></div>
        <div className="desk-watch-cell"><strong>{quantity===null?'—':quantity.toLocaleString('en-US',{maximumFractionDigits:8})}</strong><small>{checked?.status==='UNAVAILABLE'?'RPC balance unavailable':checked?'From BSC block '+view?.blockNumber:'Balance not read'}</small></div>
-       <div className="desk-watch-cell"><strong>{formatUsd(drift?.valueUsd??null)}</strong><small>{checked?.tokenPriceUsd!=null?'Mark '+formatUsd(checked.tokenPriceUsd,4):'No authenticated mark'}</small></div>
+       <div className="desk-watch-cell"><strong>{formatUsd(markedValueForDisplay(assessment,leg,checked))}</strong><small>{checked?.tokenPriceUsd!=null?'Mark '+formatUsd(checked.tokenPriceUsd,4):'No authenticated mark'}</small></div>
        <div className="desk-watch-allocation"><strong>{drift?percent(drift.actualPct):'—'} <small>/ {leg.weight}%</small></strong><div className="desk-watch-meter"><i style={{width:drift?Math.min(100,drift.actualPct)+'%':'0%'}}/><em style={{left:leg.weight+'%'}}/></div><small className={drift?.suggestedDirection==='HOLD'?'':'flagged'}>{drift?((drift.deltaPct>0?'+':'')+percent(drift.deltaPct)+' vs target'):'Not evaluable'}</small></div>
       </div>)}
      </div>}

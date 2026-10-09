@@ -31,6 +31,25 @@ export type DriftAssessment={
 const empty=(status:DriftStatus,reason:string):DriftAssessment=>({
  status,totalValueUsd:null,maxAbsDriftPct:null,legs:[],reason,reviewOnly:true,noExecution:true
 });
+/**
+ * Display a confirmed $0.00 for an observed zero token balance, rather than
+ * an unavailable valuation. Do not infer $0.00 from a missing RPC response,
+ * absent mark, stale snapshot, or unobserved contract.
+ */
+export function markedValueForDisplay(
+ assessment:DriftAssessment,
+ selected:Pick<WatchedContract,'ticker'|'platform'>,
+ observed:PortfolioObservationLeg|undefined
+):number|null{
+ const priced=assessment.legs.find(row=>row.ticker===selected.ticker&&row.platform===selected.platform);
+ if(priced)return priced.valueUsd;
+ if(assessment.status==='EMPTY'&&observed?.ticker===selected.ticker&&
+   observed.platform===selected.platform&&observed.status==='OBSERVED'&&
+   observed.balanceRaw==='0'&&observed.tokenPriceUsd!==null&&
+   Number.isFinite(observed.tokenPriceUsd)&&observed.tokenPriceUsd>0)
+  return 0;
+ return null;
+}
 export function parseWatchRequest(raw:unknown):{ok:true;walletAddress:string;legs:WatchedContract[]}|{ok:false;reason:string}{
  if(!raw||typeof raw!=='object'||Array.isArray(raw))return {ok:false,reason:'Missing public wallet and selected issuer contracts.'};
  const x=raw as Record<string,unknown>;

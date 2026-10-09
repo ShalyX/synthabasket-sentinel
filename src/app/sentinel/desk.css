@@ -1307,3 +1307,10 @@
 @media(max-width:1100px){.desk-watch-layout{grid-template-columns:minmax(0,1fr)}.desk-watch-main{padding-right:0}.desk-watch-rail{border-top:1px solid #b6c2b3;border-left:0}.desk-watch-hero{gap:25px}}
 @media(max-width:760px){.desk-watch-hero{grid-template-columns:1fr;padding:28px 0 38px}.desk-watch-signal{max-width:470px}.desk-watch-status{grid-template-columns:1fr}.desk-watch-status>div+div{padding-left:0;border-left:0;border-top:1px solid #c4cec1}.desk-watch-table-head{display:none}.desk-watch-position{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.desk-watch-issuer{grid-column:1/-1}.desk-watch-proposal-top{flex-direction:column}.desk-watch-journal-row{grid-template-columns:1fr 1fr}.desk-watch-journal-row small{grid-column:1/-1}}
 @media(max-width:470px){.desk-watch-hero h1{font-size:58px}.desk-watch-status h2{font-size:27px}.desk-watch-position{padding:20px 0}.desk-watch-proposal{padding:18px 16px}.desk-watch-action strong{font-size:17px}.desk-watch-cell strong{font-size:13px}.desk-watch-signal{box-shadow:5px 5px 0 #d7dbd0}}
+
+/* Clear separation: confirmed zero holdings vs genuinely unavailable marked value. */
+.desk-watch-zero-guidance{display:flex;justify-content:space-between;align-items:center;gap:19px;padding:20px 22px;background:#eaf0e6;border-bottom:1px solid #b9cbbb}
+.desk-watch-zero-guidance b{font:730 12px var(--font-mono),monospace;color:#304d38}
+.desk-watch-zero-guidance p{font-size:11px;color:#5d7462;line-height:1.7;margin-top:9px;max-width:620px}
+.desk-watch-zero-guidance a{flex:none;display:flex;gap:9px;align-items:center;font:740 10px var(--font-mono),monospace;color:#ab5037;text-decoration:underline;text-underline-offset:4px}
+@media(max-width:760px){.desk-watch-zero-guidance{align-items:flex-start;flex-direction:column;padding:17px 16px}}

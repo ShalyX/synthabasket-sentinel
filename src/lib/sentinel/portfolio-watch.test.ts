@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {assessPortfolioDrift,parseWatchRequest,type PortfolioObservation} from './portfolio-watch';
+import {assessPortfolioDrift,markedValueForDisplay,parseWatchRequest,type PortfolioObservation} from './portfolio-watch';
 import type {BasketLeg} from './basket';
 
 const wallet='0x1111111111111111111111111111111111111111';
@@ -82,4 +82,29 @@ test('cannot evaluate a different selected basket or broken threshold',()=>{
  assert.equal(assessPortfolioDrift([{...basket[0],weight:60}],o,5,now).status,'UNPRICED');
  assert.equal(assessPortfolioDrift(basket,o,100,now).status,'UNPRICED');
  assert.equal(assessPortfolioDrift(basket,null,5,now).status,'NEEDS_WALLET');
+});
+
+test('observed zero holdings render as a known $0.00 marked value for each selected issuer',()=>{
+ const snapshot=observed('0','0');
+ const decision=assessPortfolioDrift(basket,snapshot,5,now);
+ assert.equal(decision.status,'EMPTY');
+ assert.equal(markedValueForDisplay(decision,basket[0],snapshot.legs[0]),0);
+ assert.equal(markedValueForDisplay(decision,basket[1],snapshot.legs[1]),0);
+});
+test('unpriced, stale, missing or mismatched issuer reads never become $0.00 by accident',()=>{
+ const unpriced=observed('0','0');
+ unpriced.legs[1].tokenPriceUsd=null;
+ const missingDecision=assessPortfolioDrift(basket,unpriced,5,now);
+ assert.equal(markedValueForDisplay(missingDecision,basket[0],unpriced.legs[0]),null);
+ const zero=observed('0','0');
+ const valid=assessPortfolioDrift(basket,zero,5,now);
+ assert.equal(markedValueForDisplay(valid,basket[0],undefined),null);
+ assert.equal(markedValueForDisplay(valid,basket[0],zero.legs[1]),null);
+ assert.equal(markedValueForDisplay(valid,basket[0],{...zero.legs[0],balanceRaw:null,status:'UNAVAILABLE'}),null);
+ assert.equal(markedValueForDisplay(valid,basket[0],{...zero.legs[0],tokenPriceUsd:null}),null);
+ const stale=assessPortfolioDrift(basket,zero,5,now+120_000);
+ assert.equal(markedValueForDisplay(stale,basket[0],zero.legs[0]),null);
+ const nonempty=observed('9000000000000000000','1000000000000000000');
+ const marked=assessPortfolioDrift(basket,nonempty,5,now);
+ assert.equal(markedValueForDisplay(marked,basket[0],nonempty.legs[0]),900);
 });
