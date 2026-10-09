@@ -6,7 +6,7 @@ import {useState} from 'react';
 import {DeskProvider,useDesk} from './DeskContext';
 import {WalletProvider} from './WalletContext';
 import {WalletControls} from './WalletControls';
-const LINKS=[{href:'/sentinel',name:'The Brief',no:'01'},{href:'/sentinel/demo',name:'Guided Demo',no:'02'},{href:'/sentinel/markets',name:'Market Index',no:'03'},{href:'/sentinel/baskets',name:'Basket Studio',no:'04'},{href:'/sentinel/review',name:'Execution Review',no:'05'},{href:'/sentinel/execute',name:'Simulation Lab',no:'06'}];
+const LINKS=[{href:'/sentinel',name:'The Brief',no:'01'},{href:'/sentinel/demo',name:'Guided Demo',no:'02'},{href:'/sentinel/markets',name:'Market Index',no:'03'},{href:'/sentinel/baskets',name:'Basket Studio',no:'04'},{href:'/sentinel/review',name:'Execution Review',no:'05'},{href:'/sentinel/execute',name:'Simulation Lab',no:'06'},{href:'/sentinel/watch',name:'Portfolio Watch',no:'07'}];
 function Shell({children}:{children:React.ReactNode}){
  const path=usePathname();
  const {feed,error,refresh,snapshot,basket}=useDesk();
@@ -42,7 +42,7 @@ function Shell({children}:{children:React.ReactNode}){
   <main>{children}</main>
   <footer className="desk-footer"><div className="desk-wrap desk-footer-inner">
    <div><span className="desk-footer-logo">S / SENTINEL</span><p>Issuer pricing informs the basket. Every leg needs a live quote, built transaction, simulation and distinct wallet authorization. No orders are signed by this app today.</p></div>
-   <div className="desk-footer-links"><span>{snapshot?.count??'—'} verified BSC contracts {snapshot&&feed==='live'?'· LIVE':'· NOT LIVE'}</span><a href="https://github.com/ShalyX/synthabasket-sentinel" target="_blank" rel="noreferrer">Source code <ArrowUpRight size={13}/></a><Link href="/sentinel/demo">Guided demo <ArrowUpRight size={13}/></Link><Link href="/sentinel/markets">Market index <ArrowUpRight size={13}/></Link><Link href="/sentinel/execute">Simulation lab <ArrowUpRight size={13}/></Link></div>
+   <div className="desk-footer-links"><span>{snapshot?.count??'—'} verified BSC contracts {snapshot&&feed==='live'?'· LIVE':'· NOT LIVE'}</span><a href="https://github.com/ShalyX/synthabasket-sentinel" target="_blank" rel="noreferrer">Source code <ArrowUpRight size={13}/></a><Link href="/sentinel/demo">Guided demo <ArrowUpRight size={13}/></Link><Link href="/sentinel/markets">Market index <ArrowUpRight size={13}/></Link><Link href="/sentinel/execute">Simulation lab <ArrowUpRight size={13}/></Link><Link href="/sentinel/watch">Portfolio watch <ArrowUpRight size={13}/></Link></div>
   </div></footer>
  </div>;
 }

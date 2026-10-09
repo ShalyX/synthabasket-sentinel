@@ -1213,3 +1213,97 @@
 .desk-auth-receipt button{display:block;background:#e1e9dc;padding:10px 12px;font:700 10px var(--font-mono),monospace;margin-top:14px}
 .desk-auth-footnote{margin-top:18px;font-size:10px}
 @media(max-width:620px){.desk-auth-panel{padding:17px 13px}.desk-auth-header h2{font-size:26px}}
+
+/* M5 / portfolio watch — observed BSC balances, bounded drift, no orders */
+.desk-watchroom{padding-bottom:12px}
+.desk-watch-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(240px,.65fr);gap:56px;align-items:end;padding:39px 0 54px}
+.desk-watch-hero h1{font:460 clamp(60px,6.2vw,102px)/.96 Georgia,serif;letter-spacing:-.075em;margin:24px 0}
+.desk-watch-hero h1 em{color:var(--heat)}
+.desk-watch-hero p{max-width:655px;color:#55695c;font-size:15px;line-height:1.75}
+.desk-watch-trust{display:flex;gap:10px;align-items:center;font:600 10px var(--font-mono),monospace;margin-top:27px;letter-spacing:.03em;color:#427956}
+.desk-watch-signal{background:#21392e;color:#e4eadf;padding:25px 26px 23px;box-shadow:10px 10px 0 #d7dbd0;min-width:0}
+.desk-watch-signal-head{display:flex;justify-content:space-between;gap:13px;align-items:center;color:#b5c5b7;font:650 10px var(--font-mono),monospace;letter-spacing:.12em}
+.desk-watch-signal strong{display:block;font:480 clamp(32px,3.5vw,56px) Georgia,serif;letter-spacing:-.045em;margin-top:31px;overflow-wrap:anywhere}
+.desk-watch-signal small{font:600 9px var(--font-mono),monospace;letter-spacing:.14em;color:#a1b8a6}
+.desk-watch-signal-foot{margin-top:24px;padding-top:17px;border-top:1px solid #53685a;display:flex;gap:9px;align-items:center;font:650 9px var(--font-mono),monospace;letter-spacing:.06em;color:#c0cabd}
+.desk-watch-signal-foot>span{width:8px;height:8px;background:#aa7157;border-radius:50%}
+.desk-watch-signal-foot>span.active{background:#83bf8c}
+.desk-watch-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,325px);border-top:2px solid #263a2d;border-bottom:1px solid var(--line-heavy)}
+.desk-watch-main{min-width:0;padding:0 35px 44px 0}
+.desk-watch-rail{min-width:0;background:#e8ece3;border-left:1px solid #b6c2b3;padding:28px 27px 34px}
+.desk-watch-section-head{padding:17px 0;border-bottom:1px solid var(--line-heavy);display:flex;gap:14px;align-items:center;justify-content:space-between;font:740 9px var(--font-mono),monospace;letter-spacing:.10em;color:#5b6b60}
+.desk-watch-section-head span:first-child{color:#b1533b}
+.desk-watch-section-gap{margin-top:38px}
+.desk-watch-status{display:grid;grid-template-columns:1fr minmax(190px,.38fr);border-bottom:1px solid #c4cec1}
+.desk-watch-status>div{padding:29px 10px 29px 0;min-width:0}
+.desk-watch-status>div+div{padding-left:25px;border-left:1px solid #c4cec1}
+.desk-watch-status span,.desk-watch-status small{display:block;font:660 9px var(--font-mono),monospace;letter-spacing:.09em;color:#748273}
+.desk-watch-status h2{font:520 clamp(22px,2.6vw,39px) Georgia,serif;letter-spacing:-.04em;margin:15px 0 12px}
+.desk-watch-status p{max-width:550px;line-height:1.7;font-size:12px;color:#63766a}
+.desk-watch-status strong{font:490 clamp(25px,2.9vw,39px) Georgia,serif;display:block;letter-spacing:-.06em;margin:18px 0}
+.desk-watch-table-head,.desk-watch-position{display:grid;grid-template-columns:minmax(190px,1.3fr) minmax(120px,.8fr) minmax(115px,.7fr) minmax(160px,1fr);gap:13px;align-items:center}
+.desk-watch-table-head{padding:17px 0 12px;border-bottom:1px solid var(--line);font:730 9px var(--font-mono),monospace;color:#7e8b80;letter-spacing:.09em}
+.desk-watch-position{padding:24px 0;border-bottom:1px solid var(--line)}
+.desk-watch-issuer{display:flex;gap:11px;align-items:center;min-width:0}
+.desk-watch-issuer>div:last-child{min-width:0}
+.desk-watch-issuer b{font:670 24px Georgia,serif;letter-spacing:-.045em;display:block}
+.desk-watch-issuer small{display:block;font:550 10px var(--font-mono),monospace;color:#7a897d;margin-top:4px;white-space:normal}
+.desk-watch-index{font:670 9px var(--font-mono),monospace;color:#a46553}
+.desk-watch-cell strong{font:650 15px var(--font-mono),monospace;display:block;overflow-wrap:anywhere}
+.desk-watch-cell small{display:block;color:#889487;font-size:10px;line-height:1.5;margin-top:7px}
+.desk-watch-allocation strong{display:block;font:700 15px var(--font-mono),monospace}
+.desk-watch-allocation strong small{font:500 11px var(--font-mono),monospace;color:#8b978a}
+.desk-watch-meter{height:7px;background:#cdd9c9;margin:11px 0 8px;position:relative}
+.desk-watch-meter i{position:absolute;inset:0 auto 0 0;background:#366a4e;display:block;max-width:100%}
+.desk-watch-meter em{height:14px;width:2px;display:block;position:absolute;top:-4px;background:#b65039}
+.desk-watch-allocation>small{color:#738475;font:600 10px var(--font-mono),monospace}
+.desk-watch-allocation>small.flagged{color:#b05339}
+.desk-watch-source{display:flex;gap:12px;align-items:flex-start;padding:17px;background:#e8ece4;margin-top:20px;color:#526c59}
+.desk-watch-source svg{flex:none;margin-top:3px}
+.desk-watch-source p{font-size:11px;line-height:1.7}
+.desk-watch-source code{font:650 10px var(--font-mono),monospace}
+.desk-watch-proposal{background:#faf8f0;border:1px solid #c5d1c1;padding:23px 24px 21px;margin-top:18px}
+.desk-watch-proposal-top{display:flex;justify-content:space-between;gap:22px;align-items:start}
+.desk-watch-proposal h2{font:500 34px Georgia,serif;letter-spacing:-.045em}
+.desk-watch-proposal-top p{font-size:11px;line-height:1.7;color:#70816f;max-width:515px;margin-top:10px}
+.desk-watch-proposal-top label{flex:none;display:flex;align-items:center;gap:9px;font:740 9px var(--font-mono),monospace;letter-spacing:.06em;color:#4c6c54}
+.desk-watch-proposal-top select{padding:9px 8px;background:#e5ebe0;border:1px solid #becfbc;font:730 11px var(--font-mono),monospace;color:#294935}
+.desk-watch-proposal-list{margin-top:23px;border-top:1px solid #d3dccf}
+.desk-watch-action{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:18px 0;border-bottom:1px solid #d9e0d6}
+.desk-watch-action>div:first-child>b{font:740 9px var(--font-mono),monospace;color:#bc6448;letter-spacing:.1em}
+.desk-watch-action h3{font:530 28px Georgia,serif;letter-spacing:-.04em;margin-top:5px}
+.desk-watch-action h3 span{font:560 10px var(--font-mono),monospace;color:#849185}
+.desk-watch-action>div:last-child{text-align:right}
+.desk-watch-action strong{font:600 21px var(--font-mono),monospace}
+.desk-watch-action small{display:block;color:#788a7a;font-size:10px;margin-top:8px}
+.desk-watch-proposal-note{display:flex;gap:10px;color:#93543e;background:#f6e7da;padding:13px;margin-top:21px;font-size:11px;line-height:1.6}
+.desk-watch-proposal-note svg{flex:none}
+.desk-watch-no-trade,.desk-watch-empty-proposal{display:flex;align-items:center;gap:13px;padding:23px 4px;font-size:12px;line-height:1.7;color:#648169}
+.desk-watch-empty-proposal{color:#956449}
+.desk-watch-journal{margin-top:34px}
+.desk-watch-journal-row{display:grid;grid-template-columns:150px 1fr 1.4fr;gap:14px;padding:15px 2px;border-bottom:1px solid var(--line);align-items:center;font:580 10px var(--font-mono),monospace}
+.desk-watch-journal-row>b{color:#2b6045;font:750 10px var(--font-mono),monospace}
+.desk-watch-journal-row small{color:#839286}
+.desk-watch-journal-empty{padding:23px 0;font-size:11px;color:#748376;line-height:1.7}
+.desk-watch-rail-head>span{font:770 10px var(--font-mono),monospace;color:#b06147;letter-spacing:.09em}
+.desk-watch-rail-head h2{font:490 37px Georgia,serif;letter-spacing:-.06em;line-height:1.05;margin:21px 0}
+.desk-watch-rail-head h2 em{color:#ac624b}
+.desk-watch-rail-head p,.desk-watch-rail-note{font-size:11px;line-height:1.75;color:#697e6b}
+.desk-watch-wallet{padding:19px 14px;background:#f6f7ee;border:1px solid #c2cfbd;margin-top:27px;min-width:0}
+.desk-watch-wallet>span{font:770 9px var(--font-mono),monospace;letter-spacing:.1em;color:#6a886f;display:block;margin-bottom:14px}
+.desk-watch-wallet small{display:block;word-break:break-all;color:#677f6b;font:560 10px/1.6 var(--font-mono),monospace;margin-top:14px}
+.desk-watch-checklist{margin-top:20px;border-top:1px solid #c7d2c1}
+.desk-watch-checklist>div{display:flex;gap:12px;align-items:center;justify-content:space-between;border-bottom:1px solid #c7d2c1;padding:14px 0}
+.desk-watch-checklist span{font:700 9px var(--font-mono),monospace;color:#728973}
+.desk-watch-checklist b{font:750 9px var(--font-mono),monospace;color:#3f6c4e;text-align:right}
+.desk-watch-refresh{width:100%;margin-top:23px;background:#305843;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:16px 13px;font:760 10px var(--font-mono),monospace!important}
+.desk-watch-refresh:hover:not(:disabled){background:#436f54}
+.desk-watch-error{font-size:11px;line-height:1.6;margin-top:14px;color:#a75238}
+.desk-watch-rail-note{margin-top:21px}
+.desk-watch-rail-links{border-top:1px solid #b7c7b7;margin-top:28px;padding-top:8px}
+.desk-watch-rail-links a{display:flex;justify-content:space-between;gap:10px;padding:12px 0;font:700 11px var(--font-mono),monospace;color:#496750}
+.desk-watch-rail-links a:hover{color:#b1533b}
+@media(max-width:1300px){.desk-watch-table-head,.desk-watch-position{grid-template-columns:minmax(175px,1.3fr) minmax(125px,.8fr) minmax(100px,.7fr) minmax(130px,1fr)}.desk-watch-main{padding-right:25px}.desk-watch-rail{padding:25px 19px}}
+@media(max-width:1100px){.desk-watch-layout{grid-template-columns:minmax(0,1fr)}.desk-watch-main{padding-right:0}.desk-watch-rail{border-top:1px solid #b6c2b3;border-left:0}.desk-watch-hero{gap:25px}}
+@media(max-width:760px){.desk-watch-hero{grid-template-columns:1fr;padding:28px 0 38px}.desk-watch-signal{max-width:470px}.desk-watch-status{grid-template-columns:1fr}.desk-watch-status>div+div{padding-left:0;border-left:0;border-top:1px solid #c4cec1}.desk-watch-table-head{display:none}.desk-watch-position{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.desk-watch-issuer{grid-column:1/-1}.desk-watch-proposal-top{flex-direction:column}.desk-watch-journal-row{grid-template-columns:1fr 1fr}.desk-watch-journal-row small{grid-column:1/-1}}
+@media(max-width:470px){.desk-watch-hero h1{font-size:58px}.desk-watch-status h2{font-size:27px}.desk-watch-position{padding:20px 0}.desk-watch-proposal{padding:18px 16px}.desk-watch-action strong{font-size:17px}.desk-watch-cell strong{font-size:13px}.desk-watch-signal{box-shadow:5px 5px 0 #d7dbd0}}
