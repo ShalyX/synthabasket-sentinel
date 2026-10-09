@@ -12,8 +12,10 @@ export function parseTrustedTargets(raw:string|undefined):Set<string>{
  return new Set((raw||'').split(',').map(x=>x.trim().toLowerCase()).filter(validAddress));
 }
 export function isTrustedExecutionTarget(to:string,spender:string,routers:Set<string>,spenders:Set<string>):boolean{
- return validAddress(to)&&validAddress(spender)&&routers.has(to.toLowerCase())&&spenders.has(spender.toLowerCase())&&
-  to.toLowerCase()!==spender.toLowerCase();
+ // On authenticated LiquidMesh BSC builds, the router may itself be the token spender.
+ // Both roles need independent allowlist checks; equality is NOT intrinsically unsafe.
+ // ABI-specific semantic verification remains a separate, mandatory hard blocker.
+ return validAddress(to)&&validAddress(spender)&&routers.has(to.toLowerCase())&&spenders.has(spender.toLowerCase());
 }
 export function exactApprovalCalldata(spender:string,amountUsd:number):string{
  if(!validAddress(spender))throw Error('Unverified approval spender');

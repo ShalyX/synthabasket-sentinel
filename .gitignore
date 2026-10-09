@@ -30,3 +30,6 @@ runner-keypair.json
 .idea/
 LEARNINGS.md
 *.tsbuildinfo
+.vercel/
+.env.local
+.env.*.local

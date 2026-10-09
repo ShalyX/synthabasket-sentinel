@@ -70,8 +70,7 @@ export async function POST(req:NextRequest){
   });
   if(!decoded.ok)return reply({phase:'BLOCKED',error:decoded.message},409);
   if(!route.approveTarget||!routers.has(tx.to.toLowerCase())||!spenders.has(route.approveTarget.toLowerCase())||
-     !selectors.has(tx.data.slice(0,10).toLowerCase())||
-     tx.to.toLowerCase()===route.approveTarget.toLowerCase())
+     !selectors.has(tx.data.slice(0,10).toLowerCase()))
    return reply({error:'Router and quote-defined spender have not both been independently approved for execution.',phase:'BLOCKED'},409);
   const [chainId,usdtBalance,bnbBalance,gasPrice,allowance]=await Promise.all([
    rpc('eth_chainId',[],1),rpc('eth_call',[{to:BSC_USDT,data:'0x70a08231'+intent.walletAddress.slice(2).toLowerCase().padStart(64,'0')},'latest'],2),

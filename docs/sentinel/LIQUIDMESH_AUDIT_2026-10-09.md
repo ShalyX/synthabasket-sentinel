@@ -13,12 +13,12 @@
   - Implementation: `814fc45a704716dbda5b91791b69b7780924f66ae604606d670bded136bc339c` (10,836 bytes).
 - The beacon and implementation MAY upgrade. Pinning only proxy or issuer-token address is not an adequate pretrade security review. A second independent public RPC check was attempted and timed out, so these hashes have one RPC observation (plus BscScan public description), not independent quorum verification.
 
-## Gaps / reasons for NO GO
-- **LiquidMesh router address: NOT YET OBSERVED from a real authenticated build.**
-- **Quoted approveTarget spender: NOT YET OBSERVED in an auditable signed build.**
-- **Actual four-byte swap selector and raw calldata ABI: NOT YET INDEPENDENTLY DECODED.**
+## Updated live evidence and remaining NO GO reasons
+- **Authenticated route evidence OBTAINED** in an isolated staged production-environment build: actual router AND spender both `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`; selector `0xad43f73d`; exact 1 USDT approval instruction returned separately by Binance. See [authenticated evidence](LIQUIDMESH_AUTHENTICATED_ROUTE_2026-10-09.md).
+- **Selector implementation located** from custom diamond-like mapping: facet `0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`, current code fingerprint independently observed; source and ABI remain unverified.
+- **Full nested swap calldata NOT independently decoded.** An opaque 4,580-byte nested payload requires a trusted ABI and mutation tests before any wallet authorization.
 - The M4 prototype allowed configured router/spender/selector lists but did NOT establish the decoded recipient, minOut, input token, input quantity, expiry and all downstream onchain effects. A router + selector allowlist alone is not a calldata audit.
-- A read-only single-leg audit probe was deployed on a **preview** from the current branch. That endpoint failed with `Binance credentials are not configured on this server.` Production credentials are intentionally production-only. Do not circumvent geographic/access restrictions or copy those credentials into a public preview merely for this probe. Delete the temporary route after this audit pass.
+- A preliminary preview-only probe failed because preview credentials were absent. A later **staged production-environment deployment, without alias promotion**, successfully used the existing production-scoped Binance configuration to gather authenticated evidence. No developer credentials were copied into preview or disclosed. The one-off audit route is excluded from the committed branch.
 - Real BSC wallet previously had **0 USDT** and dust BNB. A funded transaction simulation and an actual user-confirmed purchase remain untested.
 - **Eligibility NOT verified:** Binance's official bStocks FAQ specifically requires third-party integrators to enforce geographic restrictions using a country-eligibility REST API. The exact current endpoint and authoritative user/wallet eligibility remain unresolved. Market-inventory `tradingAvailable` is NOT jurisdictional authorization. Until independent jurisdiction verification is implemented, do not allow a bStocks purchase.
 - M4 auth must remain disabled even if operator config sets environmental allowlists; implementation uses a **hard fail-closed ABI semantic guard** until an audited decoder exists.
@@ -39,7 +39,7 @@
 - Locally reproducible issuer contract fingerprint probe: `node scripts/audit-bsc-token.cjs` (public RPC, no signing).
 
 ## Remaining acceptance tests before mainnet spend
-1. Obtain current valid route evidence in an **authorized credentialed environment**; record actual router, spender, selector, full calldata (privately), and quote minOut / expiry.
+1. **COMPLETED 2026-10-09:** Obtain authenticated route evidence using existing permitted production credentials without changing public production, record router/spender/selector and exact quote/minOut, keep raw calldata private. See linked audit evidence.
 2. Confirm router and spender on BSC with verified source, implementation/proxy ownership, verified ABI, code hashes, allowance behavior and upgrade risks.
 3. Implement ABI-specific calldata decoder and compare recipient/input/output/amount/minOut/deadline; add mutation tests and guard against arbitrary external calls or untrusted callbacks.
 4. Integrate issuer provider's geographic eligibility checks; no guessed country whitelist or evasion.

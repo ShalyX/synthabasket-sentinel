@@ -22,6 +22,7 @@ test('swap selectors require operator review, ERC20 approve is never a swap sele
 test('router and spender must be independently configured, no guessed addresses',()=>{
  assert.equal(isTrustedExecutionTarget(router,spender,routers,spenders),true);
  assert.equal(isTrustedExecutionTarget(router,router,routers,spenders),false);
+ assert.equal(isTrustedExecutionTarget(router,router,routers,parseTrustedTargets(router)),true);
  assert.equal(isTrustedExecutionTarget(router,spender,new Set(),spenders),false);
  assert.equal(isTrustedExecutionTarget(router,spender,routers,new Set()),false);
  assert.equal(parseTrustedTargets('nonsense,0x0000000000000000000000000000000000000000').size,0);

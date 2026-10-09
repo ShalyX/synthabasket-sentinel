@@ -20,7 +20,8 @@ Code path is implemented for review, independent allowlist checks, exact-size US
 
 ### Known limitations / next safety gate
 - User's observed wallet holds no BSC USDT. Nothing can be live-tested as a successful purchase with it.
-- A live swap contract ABI decoder/semantic validator, audited allowlist entries, issuer eligibility/jurisdiction determination, tested quote TTL, and actual wallet rejection/mined-receipt cases are not yet signed off. Keep live switch OFF.
+- **Authenticated route evidence captured 2026-10-09:** LiquidMesh actual `tx.to` and separately verified approve spender BOTH `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`, selector `0xad43f73d`, current dynamically dispatched facet `0xa9fa1b56f4d7bd25375c2d40b4c8e36a9509e603`. The previous blanket restriction `tx.to !== spender` was incorrect and has been removed, while the independent semantic ABI guard continues to reject all execution.
+- A live swap contract ABI decoder/semantic validator, audited allowlist entries, issuer eligibility/jurisdiction determination, tested quote TTL, and actual wallet rejection/mined-receipt cases are not yet signed off. Keep live switch OFF. See [authenticated route evidence](LIQUIDMESH_AUTHENTICATED_ROUTE_2026-10-09.md).
 - No verified jurisdiction/issuer eligibility is available; integrations must follow Binance's public bStocks country-eligibility guidance, not market inventory flags alone.
 - Simulated output alone is NOT execution proof. Future work: compare on-chain token balance deltas, receipt logs and gas cost against the pretrade quote; persist only durable public receipts.
 - Server uses a public BSC RPC that is not an integrity oracle or transaction finality service. Independent RPC comparison and multiple confirmations should precede production rollout.
