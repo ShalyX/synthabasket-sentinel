@@ -275,7 +275,7 @@ export default function ExecutionLab(){
      {complete?<ShieldCheck size={28}/>:blocked?<TriangleAlert size={28}/>:<Clock3 size={28}/>}
      <div><strong>{preflightHeadline({complete,blocked,expired})}</strong>
       <p>{complete?'Each issuer-specific transaction was built and simulated from a live quote. This is predicted execution only, not a wallet approval, a position or an onchain receipt.':
-       blocked?'The simulator reported a failed transaction. Review the specific reason above; a funding-related failure triggers a separate read-only wallet diagnostic below. '+(expired?'The quote has also expired, so a future attempt requires a new quote.':'No transaction was signed or sent.'):
+       blocked?'The simulator reported a failed transaction. Review the specific reason above; a balance, gas or allowance failure triggers a separate read-only wallet diagnostic below. '+(expired?'The quote has also expired, so a future attempt requires a new quote.':'No transaction was signed or sent.'):
        expired?'One or more quote windows have elapsed. Archived results are reference-only; simulate again with fresh quotes and the active connected wallet.':
        'The official simulation endpoint receives genuine unsigned BSC transaction calldata only when you initiate this read-only test.'}</p>
      </div>

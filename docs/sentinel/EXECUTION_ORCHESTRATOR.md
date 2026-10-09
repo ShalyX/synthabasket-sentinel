@@ -44,3 +44,11 @@ It only starts from an exact hash returned from an explicit browser-wallet trans
 The independent server authorization API rejects live actions without explicitly enabled operator controls, full nested calldata interpretation and authoritative per-user issuer eligibility. The browser UI remains disabled; the wallet signer is not invoked by these orchestration tests or by the Simulation Lab. Nothing is signed, transmitted to BSC, or settled through this feature.
 
 The work is a testable lifecycle engine and truthful transaction observer, **not** proof of a live successful stock-token purchase, router audit or securities eligibility.
+
+## M10 live negative-control reproduction (October 10, 2026)
+
+`npx tsx scripts/m10-production-rehearsal.ts` exercises the actual `planRehearsal` / `rehearse` / `recoveryDecision` engine against the canonical production's live signed market inventory and real unsigned quote/build/simulation responses. It uses a deliberately unfunded, **unowned** address (`0x...dEaD`) and a 60% NVDA bStocks / 40% AMD bStocks, $25 test basket. It asserts that a first-leg failure leaves AMD `NOT_ATTEMPTED`, creates no automatic retry, and preserves `noSigning` / `noOrders`. As a live provider smoke test, the exact failure reason and quote amount can vary and the script will fail loudly if the expected negative control changes.
+
+Initial result: NVDA $15 blocked by the upstream simulator for insufficient token allowance; AMD $10 was not requested; manual fresh full-basket rehearsal remained available. No browser extension was connected, no approval was requested, and no stock-token purchase or transfer was observed. The separate browser-extension-owner wallet test remains unverified.
+
+The Simulation Lab now automatically initiates a **read-only balances/allowances diagnostic** when an actual simulator failure explicitly reports an allowance problem, as it already did for balance or gas issues. It never treats missing allowance as permission to request an approval.

@@ -6,9 +6,10 @@ export function preflightHeadline(state:{complete:boolean;blocked:boolean;expire
  return 'AWAITING AN EXPLICIT SIMULATION';
 }
 
-/** Follow a funding-related simulator failure with a read-only balance check.
- * Never interpret absence of funds as evidence that an approval is needed.
+/** Follow explicit balance, gas OR allowance failures with a read-only wallet diagnostic.
+ * The diagnostic observes balances and allowances; it never authorizes approval.
+ * Never infer that a token approval is appropriate just because funds are absent.
  */
 export function requiresFundingReadout(passed:boolean,reason:string|null):boolean{
- return !passed&&typeof reason==='string'&&/balance|funds|gas/i.test(reason);
+ return !passed&&typeof reason==='string'&&/balance|funds|gas|allowance/i.test(reason);
 }
