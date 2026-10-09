@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {assessPreview} from '@/lib/sentinel/policy';
 import {parseSimulationIntent,eligibleToSimulate,rawUsdtAmount,selectRouteForSimulation,checkSwapBuild,assessSimulation,SIMULATION_MAX_IMPACT_PERCENT,SIMULATION_SLIPPAGE_PERCENT} from '@/lib/sentinel/execution-preflight';
 import {evaluateLiveSpend,exactApprovalCalldata,parseTrustedTargets,parseTrustedSelectors} from '@/lib/sentinel/execution-authorization';
+import {inspectBuildMinimum,verifyKnownRouterSemantics} from '@/lib/sentinel/route-audit';
 import {getSentinelMarkets,binanceGet,binanceSimulateEvmTx,BSC_USDT,UpstreamError} from '@/lib/sentinel/server';
 
 export const runtime='nodejs';
@@ -60,6 +61,14 @@ export async function POST(req:NextRequest){
   const checked=checkSwapBuild(built,intent,amount,route.toTokenAmount,token.address,BSC_USDT);
   if(!checked.ok)return reply({error:checked.message,phase:'BLOCKED'},409);
   const tx=checked.value;
+  const minOut=inspectBuildMinimum(built,route.toTokenAmount);
+  if(!minOut.ok)return reply({phase:'BLOCKED',error:minOut.message},409);
+  const decoded=verifyKnownRouterSemantics(tx,{
+   inputToken:BSC_USDT,outputToken:token.address,sender:intent.walletAddress,
+   recipient:intent.walletAddress,inputAmountRaw:amount,minOutputRaw:minOut.value.minReceiveRaw,
+   deadline:openedAt+30000
+  });
+  if(!decoded.ok)return reply({phase:'BLOCKED',error:decoded.message},409);
   if(!route.approveTarget||!routers.has(tx.to.toLowerCase())||!spenders.has(route.approveTarget.toLowerCase())||
      !selectors.has(tx.data.slice(0,10).toLowerCase())||
      tx.to.toLowerCase()===route.approveTarget.toLowerCase())

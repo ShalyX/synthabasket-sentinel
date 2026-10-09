@@ -12,7 +12,8 @@ type Reviewed={
  approval?:{to:string;data:string;value:'0x0'};
  swap?:{to:string;data:string;value:'0x0';gas:string};
 };
-type Submitted={hash:string;target:string;sender:string;type:'approval'|'swap';status:string;block?:string};
+type Submitted={hash:string;target:string;sender:string;type:'approval'|'swap';status:string;block?:string; ticker:string;platform:'bstock'|'ondo'};
+type Settlement={status:string;confirmations?:string;stateBalances?:{status:string;usdtNetDecrease?:string;issuerNetIncrease?:string};transferLogs?:{usdtSentRaw:string;issuerReceivedRaw:string}};
 export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];enabled:boolean;operationKey:string}){
  const wallet=useWallet();
  const [index,setIndex]=useState(0);
@@ -21,11 +22,12 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
  const [ack,setAck]=useState(false);
  const [err,setErr]=useState<string|null>(null);
  const [submitted,setSubmitted]=useState<Submitted|null>(null);
+ const [settlement,setSettlement]=useState<Settlement|null>(null);
  const [now,setNow]=useState(0);
  const operation=useRef(operationKey);operation.current=operationKey;
  const abort=useRef<AbortController|null>(null);
  const leg=legs[index];
- useEffect(()=>{abort.current?.abort();setReview(null);setErr(null);setAck(false);setSubmitted(null);},[operationKey,index]);
+ useEffect(()=>{abort.current?.abort();setReview(null);setErr(null);setAck(false);setSubmitted(null);setSettlement(null);},[operationKey,index]);
  useEffect(()=>{setNow(Date.now());const id=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(id);},[]);
  const scoped=review&&leg&&wallet.address&&wallet.ready&&review.sender.toLowerCase()===wallet.address.toLowerCase()&&
   review.ticker===leg.ticker&&review.issuer===leg.platform&&review.amountUsd===leg.amountUsd?review:null;
@@ -36,7 +38,7 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
   if(!enabled||!leg||busy)return;
   const key=operationKey,controller=new AbortController();
   abort.current?.abort();abort.current=controller;
-  setBusy(true);setErr(null);setReview(null);setAck(false);setSubmitted(null);
+  setBusy(true);setErr(null);setReview(null);setAck(false);setSubmitted(null);setSettlement(null);
   try{
    const response=await fetch('/api/sentinel/authorize',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ticker:leg.ticker,platform:leg.platform,amountUsd:leg.amountUsd,walletAddress:wallet.address}),
@@ -60,7 +62,7 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
     ...(phase==='SWAP_READY'?{gas:'0x'+BigInt((tx as NonNullable<Reviewed['swap']>).gas).toString(16)}:{})};
    const hash=await wallet.submitReviewedTransaction(transaction,Date.parse(scoped.expiresAt));
    if(operation.current!==key)return;
-   setSubmitted({hash,target:tx.to,sender:scoped.sender,type:phase==='SWAP_READY'?'swap':'approval',status:'PENDING'});
+   setSubmitted({hash,target:tx.to,sender:scoped.sender,type:phase==='SWAP_READY'?'swap':'approval',status:'PENDING',ticker:scoped.ticker,platform:scoped.issuer as 'bstock'|'ondo'});
    setReview(null);setAck(false);
   }catch(e){if(operation.current===key)setErr(e instanceof Error?e.message:'Wallet request failed or was rejected.');}
   finally{setBusy(false);}
@@ -75,6 +77,14 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
    if(operation.current!==key)return;
    if(!response.ok)throw Error(value.error||'Receipt verification unavailable.');
    setSubmitted({...set,status:String(value.status),block:typeof value.blockNumber==='string'?value.blockNumber:undefined});
+   if(set.type==='swap'&&value.status==='MINED_SUCCESS'){
+    const settlementResponse=await fetch('/api/sentinel/settlement',{method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({hash:set.hash,sender:set.sender,target:set.target,ticker:set.ticker,platform:set.platform}),cache:'no-store'});
+    const evidence=await settlementResponse.json();
+    if(operation.current!==key)return;
+    setSettlement({status:String(evidence.status||'UNAVAILABLE'),confirmations:evidence.confirmations,
+     stateBalances:evidence.stateBalances,transferLogs:evidence.transferLogs});
+   }
   }catch(e){if(operation.current===key)setErr(e instanceof Error?e.message:'Receipt lookup failed.');}
   finally{setBusy(false);}
  }
@@ -111,9 +121,14 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
   </div>}
   {submitted&&<div className="desk-auth-receipt">
    <ShieldAlert size={19}/><div><b>Wallet returned a transaction hash · {submitted.status}</b>
-    <p>{submitted.type==='approval'?'Allowance transaction':'Swap transaction'} · mined success is not issuer-token delivery verification.</p>
+    <p>{submitted.type==='approval'?'Allowance transaction':'Swap transaction'} · mined success alone is not issuer-token delivery verification.</p>
     <a href={'https://bscscan.com/tx/'+submitted.hash} target="_blank" rel="noreferrer">{submitted.hash.slice(0,18)}…{submitted.hash.slice(-8)} ↗</a>
-    <button type="button" onClick={()=>void verify()} disabled={busy}>Verify receipt on BSC</button>
+    <button type="button" onClick={()=>void verify()} disabled={busy}>Verify receipt and {submitted.type==='swap'?'issuer token movements':'approval transaction'} on BSC</button>
+    {settlement&&<div className="desk-auth-settlement"><b>ONCHAIN TOKEN EVIDENCE · {settlement.status}</b>
+     <p>{settlement.confirmations||'—'} observed block confirmations · historical balance evidence: {settlement.stateBalances?.status||'UNAVAILABLE'}</p>
+     {settlement.transferLogs&&<p>USDT sent (raw): {settlement.transferLogs.usdtSentRaw} · issuer token credited (raw): {settlement.transferLogs.issuerReceivedRaw}</p>}
+     {settlement.stateBalances?.status==='VERIFIED'&&<p>USDT balance decrease (raw): {settlement.stateBalances.usdtNetDecrease} · issuer balance increase (raw): {settlement.stateBalances.issuerNetIncrease}</p>}
+    </div>}
    </div>
   </div>}
   {err&&<p className="desk-auth-error" role="alert">{err}</p>}
