@@ -92,6 +92,7 @@ export async function POST(req:NextRequest){
    routeMode:'SWAP',routeVendor:'LiquidMesh',priceImpactPct:route.priceImpactPercent,
    maxSlippagePercent:Number(SIMULATION_SLIPPAGE_PERCENT),
    gasLimit:evmTx.gas,
+   approvalTarget:route.approveTarget, // public quote spender, not approval permission
    builtTransaction:{present:true,dataBytes:(evmTx.data.length-2)/2,nonzeroNativeValue:false},
    simulation:{...simulation,status:safeStatus,
     reason:expired?'Quote validity elapsed during pretrade simulation; request new quotes.':simulation.reason},

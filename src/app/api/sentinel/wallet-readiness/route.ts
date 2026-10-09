@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {SIMULATION_MAX_BASKET_USDT,validAddress} from '@/lib/sentinel/execution-preflight';
 import {BSC_USDT} from '@/lib/sentinel/server';
 import {summarizeFunding,estimateSwapGas} from '@/lib/sentinel/wallet-funding';
+import {parseAllowanceLegs,requiredBySpender,summarizeAllowances} from '@/lib/sentinel/wallet-allowance';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -36,20 +37,23 @@ export async function POST(request:NextRequest){
  if(limits.size>500)limits.clear();
  let raw:unknown;
  try{
-  if(Number(request.headers.get('content-length')||0)>400)throw Error();
+  if(Number(request.headers.get('content-length')||0)>1200)throw Error();
   const input=await request.text();
-  if(input.length>400)throw Error();
+  if(input.length>1200)throw Error();
   raw=JSON.parse(input);
  }catch{return reply({error:'Invalid balance check request.'},400);}
  if(!raw||typeof raw!=='object'||Array.isArray(raw))return reply({error:'Invalid balance check request.'},400);
  const fields=raw as Record<string,unknown>;
- if(Object.keys(fields).some(key=>!['walletAddress','amountUsd','gasLimit'].includes(key))||
+ if(Object.keys(fields).some(key=>!['walletAddress','amountUsd','gasLimit','allowanceLegs'].includes(key))||
   !validAddress(fields.walletAddress)||typeof fields.amountUsd!=='number')
   return reply({error:'Provide only a public BSC address and a simulation amount.'},400);
  const amount=fields.amountUsd;
  if(!Number.isFinite(amount)||amount<1||amount>SIMULATION_MAX_BASKET_USDT||
   Math.abs(Math.round(amount*100)-amount*100)>1e-6)
   return reply({error:'Simulation basket amount must be $1–$50 USDT with at most two decimals.'},400);
+ const parsedAllowances=parseAllowanceLegs(fields.allowanceLegs,amount);
+ if(!parsedAllowances.ok)return reply({error:parsedAllowances.message},400);
+ const requiredAllowances=requiredBySpender(parsedAllowances.legs);
  const minimum=BigInt(Math.round(amount*100))*10n**16n;
  const suppliedGas=fields.gasLimit;
  if(suppliedGas!==undefined&&suppliedGas!==null&&
@@ -66,9 +70,24 @@ export async function POST(request:NextRequest){
    rpc('eth_gasPrice',[],4).catch(()=>null)
   ]);
   if(chain!==56n)throw new Error('RPC_CHAIN');
+  // A missing/failed allowance query must never become an assumed zero or approval.
+  let allowanceState:'NOT_REQUESTED'|'VERIFIED'|'UNAVAILABLE'='NOT_REQUESTED';
+  let allowanceSnapshots:ReturnType<typeof summarizeAllowances>=[];
+  if(requiredAllowances.size){
+   try{
+    const spenders=[...requiredAllowances.keys()];
+    const onchain=await Promise.all(spenders.map((spender,i)=>rpc('eth_call',[
+     {to:BSC_USDT,data:'0xdd62ed3e'+address.slice(2).toLowerCase().padStart(64,'0')+
+      spender.slice(2).padStart(64,'0')},'latest'],i+5)));
+    allowanceSnapshots=summarizeAllowances(requiredAllowances,new Map(spenders.map((spender,i)=>[spender,onchain[i]])));
+    allowanceState='VERIFIED';
+   }catch{allowanceState='UNAVAILABLE';}
+  }
   return reply({
    kind:'sentinel.bsc.readonly-wallet-balances',chainId:56,
    ...summarizeFunding(bnb,usdt,minimum),
+   allowanceChecked:allowanceState==='VERIFIED',
+   allowanceState,allowanceSnapshots,
    ...estimateSwapGas(bnb,gasPrice,gasLimit),
    estimateScope:gasLimit?'LAST_BUILT_SWAP_LEG':'UNAVAILABLE',
    stressScenarioGasLimit:3000000,

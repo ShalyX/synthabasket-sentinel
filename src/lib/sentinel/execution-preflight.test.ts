@@ -44,15 +44,21 @@ test('strict public wallet, fixed ticker/issuer and capped BSC USDT inputs',()=>
 });
 
 test('route selection allows only quote-bound LiquidMesh SWAP, never RFQ or unexpected spend',()=>{
- const selected=selectRouteForSimulation([validQuote],'10000000000000000000');
+ const selected=selectRouteForSimulation([{...validQuote,approveTarget:ROUTER}],'10000000000000000000');
  assert.equal(selected.ok,true);
- if(selected.ok)assert.equal(selected.value.executionMode,'SWAP');
+ if(selected.ok){
+  assert.equal(selected.value.executionMode,'SWAP');
+  assert.equal(selected.value.approveTarget,ROUTER);
+ }
+ const missing=selectRouteForSimulation([validQuote],'10000000000000000000');
+ if(missing.ok)assert.equal(missing.value.approveTarget,null);
  for(const invalid of [
   [{...validQuote,executionMode:'RFQ'}],
   [{...validQuote,vendorName:'UnknownRouter'}],
   [{...validQuote,fromTokenAmount:'999'}],
   [{...validQuote,priceImpactPercent:3}],
   [{...validQuote,priceImpactPercent:null}],
+  [{...validQuote,approveTarget:'not-a-wallet'}],
   [{...validQuote,toTokenAmount:'0'}],
   [{...validQuote,quoteId:''}],
   []

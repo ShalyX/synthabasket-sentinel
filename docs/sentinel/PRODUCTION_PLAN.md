@@ -18,8 +18,8 @@ A previous version of this file marked execution "optional" and listed automatic
 |---|---|---|
 | M0 | Signed Binance Web3 BSC token inventory and two-issuer same-stock quotes | DONE: real bStocks and Ondo SWAP / LiquidMesh quotes |
 | M1 | Share-equivalent normalization, venue freshness, issuer status, editable portfolio thesis | DONE: 30-second live comparison, four-leg allocation and review |
-| M2 | **Executable quote build and actual Transaction API simulation** for a specific issuer, amount and public wallet address, with no signer, allowance side effects, or sending | IN PROGRESS, core not optional |
-| M3 | **Controlled basket execution planner**: allocation to intent, per-leg simulation, exact-size caps, fees/allowances/sender checks, reject at first failing leg | BLOCKED on M2 proof, core |
+| M2 | **Executable quote build and actual Transaction API simulation** for a specific issuer, amount and public wallet address, with no signer, allowance side effects, or sending | VERIFIED live Oct 8: quote → build → simulator ran; simulator correctly BLOCKED unfunded USDT, no transaction sent |
+| M3 | **Controlled basket execution planner**: allocation to intent, per-leg simulation, exact-size caps, fees/allowances/sender checks, reject at first failing leg | IN PROGRESS: fail-first batch, chain-bound sender, BSC balances and read-only quote-spender allowance snapshots implemented; fee/permission readiness and live multi-leg success not verified |
 | M4 | **Human-authorized mainnet execution**: wallet signer connection owned by user, chain/balance/allowance checks, individually reviewed exact approvals and spend caps, post-trade receipt; no unattended orders | NOT STARTED, core; cannot claim until onchain receipts |
 | M5 | **Agent loop**: deterministic strategy monitoring or signal detection, preflight for rebalance candidates, clear explainability, no autonomous key access; opt-in review of proposals | NOT STARTED, core |
 | M6 | **Agentic Wallet** integration beyond CLI quote, with actual independently verified permission safety and execution capability where permitted | NOT VERIFIED FOR EXECUTION; optional special prize |

@@ -15,10 +15,10 @@ Sentinel separates the research process into distinct areas:
 3. **Market Index** — issuer-specific Ondo and bStocks instruments on BSC; search, status and adjusted basis.
 4. **Instrument Dossier** — contract, token-to-share conversion ratio, reference parity and optional quote checks.
 5. **Basket Studio** — four-leg maximum allocations with explicit issuers, weights summing to 100%, and a proposed USDT budget.
-6. **Execution Review** — short-lived Binance Web3 quote requests, deterministic fail-closed guards and an independently validated **local wallet readiness file**.
+6. **Execution Review and Simulation Lab** — short-lived Binance Web3 quote requests, deterministic fail-closed guards, wallet-bound unsigned swap builds, real Transaction API simulation, and read-only USDT/BNB/quoted-spender allowance diagnostics. A passed simulation is not permission to trade.
 7. **Agentic Wallet second opinion** — the instrument dossier generates an optional quote-only command for the owner's paired PC. The official CLI's response can be locally sanitized and imported to compare against a fresh hosted quote for the same contract. The wallet session never reaches Vercel. This user-operated handoff was **successfully exercised with a real local CLI quote on October 8**: 10 USDT indicated 0.04268987900435519 NVDAB. The sanitized observation was inspected and imported into the browser. The fresh, simultaneous two-source comparison was **not** completed because its two-minute local quote window expired; see [instructions](docs/sentinel/AGENTIC_QUOTE_HANDOFF.md).
 
-**Not a trading application:** No automated trading, signed messages, token approvals, on-chain transfers, wallet custody, or Agent Studio runtime. A read-only Binance Agentic Wallet CLI integration has been tested **locally**, and the site's imported diagnostic is not authorization to transact.
+**Not yet a trading application:** A connected BSC public wallet is used as the read-only simulation sender and for balance/allowance queries; there is no automated trading, signed message, token approval, on-chain transfer, wallet custody, or Agent Studio runtime. A read-only Binance Agentic Wallet CLI integration has been tested **locally**, and the site's imported diagnostic is not authorization to transact.
 
 ## Honest current availability
 
