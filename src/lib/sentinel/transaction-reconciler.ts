@@ -44,6 +44,8 @@ export function reconcileTransaction(
   return out(expected,'APPROVAL_MINED','Approval receipt mined. An allowance is not a swap or issuer-token delivery; recheck allowance onchain.',true);
  if(!obj(settlement))
   return out(expected,'RECEIPT_ONLY','EVM receipt mined, but no verified issuer token movement is available.',true);
+ if(settlement.kind==='sentinel.bsc.settlement'&&settlement.status==='UNAVAILABLE')
+  return out(expected,'SETTLEMENT_INCOMPLETE','Settlement verification unavailable. No purchase or token delivery inferred.',true);
  if(settlement.kind!=='sentinel.bsc.settlement'||settlement.chainId!==56||
     typeof settlement.hash!=='string'||settlement.hash.toLowerCase()!==expected.hash.toLowerCase())
   return out(expected,'MISMATCH','Settlement evidence belongs to another transaction or chain.',true);
