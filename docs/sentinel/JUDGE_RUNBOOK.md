@@ -3,7 +3,7 @@
 **Project:** BSC tokenized-stock basket execution planner with deterministic safeguards and read-only portfolio monitoring.
 **GitHub:** https://github.com/ShalyX/synthabasket-sentinel
 **Production market endpoint:** https://synthabasket-sentinel.vercel.app
-**New six-decision walkthrough:** `/sentinel/demo` on the current PR #1 preview; published stable production only after an explicitly authorized release.
+**Live six-decision walkthrough:** https://synthabasket-sentinel.vercel.app/sentinel/demo — released to the canonical production domain October 9, 2026.
 **Track:** BNB Hack / Tokenized Stocks Edition, Main Track.
 **Deadline:** October 11, 2026, 12:00 UTC.
 **Source:** Next.js 15 / BSC chain ID 56 / Binance Web3 signed RWA market and Trading quotes / Binance Transaction API simulation / ERC-20 public `balanceOf`.
@@ -15,15 +15,15 @@ Sentinel is a **basket execution agent**, not only an issuer comparison research
 
 **Discover** real bStocks and Ondo issuer contracts → **compare** their ratio-adjusted exposure → **construct** a weighted basket → **quote, build and simulate** each unsigned BSC USDT leg → **request explicit user wallet approval only if release gates can genuinely pass** → **observe** actual issuer token balances and propose indicative rebalance amounts. The product does **not** claim to have purchased any tokens through this app. Live transaction release remains **HARD LOCKED** because router nested calldata/source and per-user issuer eligibility are unverified.
 
-The working issuer data layer is real. Earlier authenticated read-only Binance calls returned 488 BSC contracts across 448 ticker symbols and both NVIDIA wrapper types. Production browser quotes are short-lived and may become unavailable. The preview explicitly marks when it relays first-party production inventory; it does not have production-scoped Binance quote/build/simulation credentials.
+The working issuer data layer is real. Authenticated Binance production data has returned 488 BSC token contracts and 448 tickers. The production server holds signed quote/build/simulation credentials. The preview has a clearly labeled read-only relay with NO live quote/build credentials.
 
 ## Judge journey — follow the user, not just the API
 
-1. **Open the new `/sentinel/demo` (PR preview).** Read the central question and the independent state of market inventory, basket, connected BSC account and final execution release. “NO GO” is a security result, not a stubbed success.
+1. **Open the canonical production Guided Demo.** Review source inventory, local basket, sender and execution release statuses. The final NO GO is a real safety decision, not a stubbed successful transaction.
 2. **Issuer dossier `/sentinel/markets/NVDA`.** Find two distinct verified BSC issuer token records (NVDAB and NVDAon), actual token-to-share ratios and reference marks. A token mark is NOT a quote, nor an entitlement to underlying securities.
 3. **Basket Studio `/sentinel/baskets`.** From the Guide you may click “Set NVDA + AMD research basket,” which selects real issuer records and an initial 50/50 local thesis. Adjust weights and issuers; the total remains 100%. A basket target does not issue shares, claim holdings, or spend funds.
 4. **Execution Review `/sentinel/review`.** With authorized provider access, request fresh real venue quotes and inspect venue, basis, impact and expiry. An unavailable quote is an honest unavailable state. Do not claim it was a purchase.
-5. **Simulation Lab `/sentinel/execute`.** Connect an injected BSC wallet (chain 56). Select a bounded test size ($1–$25 per leg, at most $50 total), initiate quote→build→simulate per leg. On a properly authenticated authorized environment, the real Binance Transaction API can report PASS or BLOCKED. A previously tested route was BLOCKED by insufficient BSC USDT; no transaction was signed. **The public PR preview does not hold quote API credentials and cannot be relied on for signed simulation**.
+5. **Simulation Lab /sentinel/execute.** Connect a public BSC wallet on chain 56; user-initiated 1–25 USDT-per-leg preflight is available from the canonical production domain. A genuine 1 USDT NVDAB production SWAP build/simulation on October 9 was BLOCKED by insufficient USDT. This verifies a fail-closed simulation path, not a purchase. The preview cannot reproduce authenticated quote/build/sim calls because it has no production API credentials.
 6. **Execution Decision Record** on the simulation screen makes distinct determinations: market, intent, sender, route/simulation, funding/allowances, issuer entitlement, two-layer proxy/ABI semantics, and final release. The last three remain UNVERIFIED/LOCKED regardless of any green simulator status. No approval, swap or wallet signature is initiated.
 7. **Portfolio Watch `/sentinel/watch`.** Read your actual selected issuer balances pinned to one BSC block, compare marked allocation with targets if nonempty, and get indicative drift changes only. A real zero position, as observed for a selected Ondo ABNB issuer token, displays $0.00 and **NO OBSERVED POSITIONS** instead of a fabricated rebalance. If a mark or balance is missing, the valuation remains unknown.
 8. **Return to Guide.** The session-only journal records actual returned simulator and BSC balance responses for the SAME connected wallet, selected issuer mix and allocation. No replays of expired executable quotes, fictitious fills, fabricated wallet balances, or seeded trade receipts.

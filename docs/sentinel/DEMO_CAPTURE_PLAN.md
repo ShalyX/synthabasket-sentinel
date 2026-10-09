@@ -4,7 +4,7 @@
 
 **Product job:** demonstrate the agent loop **discover → issuer comparison → weighted basket → quote/build/simulate → explicit transaction RELEASE DENIED → real wallet holdings/drift**. Do not repeat the former three-move wrapper-only research-desk demo.
 
-**Public production market and venue:** https://synthabasket-sentinel.vercel.app — production-only Binance credentials; old main deployment does not yet have M8 walkthrough until explicitly merged. **M8 review preview:** the preview from PR #1 includes new end-to-end walkthrough, decision ledger, Portfolio Watch, and a read-only relay of production inventory. The preview has **no Binance quote/build/simulate credentials**, so it cannot honestly show live signed execution simulations. Reproduce a live quote/sim separately on a legally permitted, properly authenticated environment, or state NO CURRENT SIM EVIDENCE.
+**Verified canonical production:** https://synthabasket-sentinel.vercel.app/sentinel/demo — merged October 9 with production-scoped Binance API credentials. The production quote endpoint returned HTTP 200 (LiquidMesh SWAP), the unsigned simulator returned HTTP 200 with a genuine insufficient-USDT BLOCK, and live authorization was rejected with HTTP 503. No transaction was signed or broadcast. Preview environments have read-only inventory relay only.
 
 ## Capture structure — 3:35 target
 

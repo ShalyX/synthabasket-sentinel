@@ -15,11 +15,11 @@
 
 **One-line description:** Build issuer-specific BSC stock baskets, rehearse each swap using real unsigned Binance Web3 transactions and deterministic risk checks, expose blocked execution safely, and monitor actual wallet allocations.
 
-**Project overview (review before use):** Sentinel is an independent research desk for tokenized equities on BNB Chain. It solves a subtle pricing trap: two wrappers of the same underlying stock can have different contract addresses, token-to-share conversion ratios, prices, and executable venue indications. Sentinel obtains actual BSC RWA issuer inventory through authenticated Binance Web3 APIs; normalizes reference parity and live $10 SWAP quote output into share-equivalent exposure; and keeps the resulting comparison valid only while the quoted routes remain fresh. A local Basket Studio permits explicit issuer and weight selection, and a deterministic Execution Review checks quote expiry, impact and basis. The optional Binance Agentic Wallet handoff can import a sanitized owner-operated CLI quote observation, but no cloud wallet execution is performed. The app does not sign, approve, broadcast or execute trades.
+**Project overview (review before use):** Sentinel plans issuer-specific BSC tokenized-stock baskets from live Binance Web3 inventory. Users choose bStocks/Ondo wrappers, normalize equivalent share exposure from genuine quotes, and set explicit 100%-weighted USDT intents. Each leg receives an actual unsigned BSC swap build and Binance Transaction API simulation. A per-gate decision record evaluates the wallet, balances, allowances, simulator outcome, issuer user-specific permission, and nested router safety. Signing and real trading stay HARD LOCKED until independent issuer eligibility and ABI verification are available. Wallet Portfolio Watch reads actual ERC-20 balances at one BSC block and proposes only indicative allocation drift. The current production version did not purchase stock tokens, request signatures or broadcast transactions.
 
 **Public source:** https://github.com/ShalyX/synthabasket-sentinel
 **Working public site:** https://synthabasket-sentinel.vercel.app/sentinel
-**Six-decision end-to-end Guided Demo (branch preview until merge):** https://synthabasket-sentinel.vercel.app/sentinel/demo
+**Six-decision end-to-end Guided Demo (LIVE production):** https://synthabasket-sentinel.vercel.app/sentinel/demo
 **Primary instrument proof:** https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA
 **Detailed judge runbook:** https://github.com/ShalyX/synthabasket-sentinel/blob/main/docs/sentinel/JUDGE_RUNBOOK.md
 **Video link:** NOT RECORDED / UPLOADED YET. Fill in only after verifying a working public video. Recommended length is under 4 minutes.
