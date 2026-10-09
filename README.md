@@ -1,6 +1,6 @@
 # SynthaBasket Sentinel
 
-**Tokenized-stock research and pre-execution intelligence for BNB Smart Chain.**
+**A BNB Chain tokenized-stock basket execution agent: real issuer discovery → weighted portfolio → unsigned transaction simulation → explicit release checks → onchain portfolio observation. Live spending is hard-locked until issuer and router verification.**
 
 [Guided Demo — start here](https://synthabasket-sentinel.vercel.app/sentinel/demo) · [Sentinel live app](https://synthabasket-sentinel.vercel.app/sentinel) · [NVDA issuer comparison](https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA) · [Source/runbook](docs/sentinel/JUDGE_RUNBOOK.md)
 
@@ -15,10 +15,24 @@ Sentinel separates the research process into distinct areas:
 3. **Market Index** — issuer-specific Ondo and bStocks instruments on BSC; search, status and adjusted basis.
 4. **Instrument Dossier** — contract, token-to-share conversion ratio, reference parity and optional quote checks.
 5. **Basket Studio** — four-leg maximum allocations with explicit issuers, weights summing to 100%, and a proposed USDT budget.
-6. **Execution Review** — short-lived Binance Web3 quote requests, deterministic fail-closed guards and an independently validated **local wallet readiness file**.
+6. **Execution Review, Simulation Lab and M4 wallet action gate** — short-lived Binance Web3 quotes, wallet-bound swap builds, real Transaction API simulation and read-only balance/allowance diagnostics. New **default-disabled** human authorization lane can request a bounded, distinct exact-size USDT approval or swap only after independently configured router/spender/selector allowlists, fresh reviews, and explicit browser-wallet confirmations. Onchain receipt lookup verifies mined sender/target/status; no live success proof yet. See [M4 safety gates](docs/sentinel/EXECUTION_M4.md).
 7. **Agentic Wallet second opinion** — the instrument dossier generates an optional quote-only command for the owner's paired PC. The official CLI's response can be locally sanitized and imported to compare against a fresh hosted quote for the same contract. The wallet session never reaches Vercel. This user-operated handoff was **successfully exercised with a real local CLI quote on October 8**: 10 USDT indicated 0.04268987900435519 NVDAB. The sanitized observation was inspected and imported into the browser. The fresh, simultaneous two-source comparison was **not** completed because its two-minute local quote window expired; see [instructions](docs/sentinel/AGENTIC_QUOTE_HANDOFF.md).
 
-**Not a trading application:** No automated trading, signed messages, token approvals, on-chain transfers, wallet custody, or Agent Studio runtime. A read-only Binance Agentic Wallet CLI integration has been tested **locally**, and the site's imported diagnostic is not authorization to transact.
+**Authenticated LiquidMesh evidence obtained (October 9, 2026):** Fresh Binance-signed BSC NVDA/bStocks quote/build confirmed actual router and approval spender `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`, swap selector `0xad43f73d`, and a storage-dispatched implementation facet. Raw 4,964-byte calldata was preserved privately for audit; it was never signed or broadcast. [Read the authenticated route findings](docs/sentinel/LIQUIDMESH_AUTHENTICATED_ROUTE_2026-10-09.md).
+
+**Preview read-only live-data bridge (October 9):** Uncredentialed Vercel previews obtain *market inventory only* from this project's canonical production read-only market endpoint, with schema and 70-second freshness checks and an explicit “First-party relay” label. No Binance credentials are copied to previews, and missing data still fails closed. Wallet balance reads stay direct, pinned to one BSC block; user-specific trading rights remain unverified and M4 is disabled.
+
+**M5 Portfolio Watch (October 9):** The new [/sentinel/watch](/sentinel/watch) route follows the current BSC account's selected issuer-contract balances at one block; marks are sourced from the Binance inventory, not invented. Deterministic drift thresholds and indicative rebalance suggestions remain review-only; no trades or approvals. [Read M5 architecture and limitations](docs/sentinel/PORTFOLIO_WATCH_M5.md).
+
+**Vendor router source finding (October 9):** LiquidMesh officially publishes a BSC router at `0x3d90f66b534dd8482b181e24655a9e8265316be9`, **different from Binance's outer swap tx.to** `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`. Sourcify exactly verifies the vendor router's `TransparentUpgradeableProxy`, but its current BSC implementation and the Binance outer Diamond facet lack verified source. Binance's official bStocks FAQ says an eligibility endpoint exists without documenting its request/response. [Source-of-truth contract and eligibility findings](docs/sentinel/LIQUIDMESH_OFFICIAL_ROUTER_ELIGIBILITY_2026-10-09.md).
+
+**Follow-up semantics and issuer-eligibility verification (October 9):** Two BSC RPCs independently confirmed the current LiquidMesh router/facet and EOA owner, and Sentinel now structurally checks the privately captured 4,580-byte nested LiquidMesh envelope. **Full nested call semantics are NOT source-verified, and no authoritative bStocks user-country/issuer eligibility proof is available. Trading stays disabled.** [Read the execution-gate verification](docs/sentinel/LIQUIDMESH_SEMANTICS_ELIGIBILITY_2026-10-09.md).
+
+**Audit verdict (October 9, 2026): NO GO for real funds.** An authenticated live Binance LiquidMesh quote/build was captured and its **outer** calldata envelope validated, but the nested 4,580-byte instructions and current swap implementations were not independently verified. User/issuer eligibility remains unknown. M4 now contains a **hard ABI semantic deny** that blocks all signing even if an operator enables its environment flag. [Read the reproducible audit findings](docs/sentinel/LIQUIDMESH_AUDIT_2026-10-09.md).
+
+**M8 interactive end-to-end demo (October 9):** The current PR branch adds a six-decision execution walkthrough, a separately statused Decision Record in Simulation Lab, and session-only provenance for real simulator/BSC balance observations. The judge capture guide now covers the whole product rather than just wrapper comparisons. [Full runbook](docs/sentinel/JUDGE_RUNBOOK.md) · [Video capture plan](docs/sentinel/DEMO_CAPTURE_PLAN.md). **No complete demo MP4 or public video URL has been produced yet.**
+
+**Live execution is still locked in deployed production:** The M4 branch adds explicit wallet-owned transaction requests behind a separate default-OFF operator switch, with no custody, automated trading or silent signatures. Nothing can sign merely from an imported CLI diagnostic or simulator status. This authorization path has NOT been production-enabled or proven by a mined swap receipt.
 
 ## Honest current availability
 

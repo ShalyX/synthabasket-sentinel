@@ -4,7 +4,7 @@ export interface Equity {
  tokenPrice:number|null; referencePrice:number|null; tokenToShareRatio:number|null; basisPct:number|null;
  tradingAvailable:boolean|null; marketSession:string|null;
 }
-export interface MarketSnapshot {asOf:string;tokens:Equity[];count:number;tickers:number;}
+export interface MarketSnapshot {asOf:string;tokens:Equity[];count:number;tickers:number;source?:'first-party-production-readonly';}
 export interface QuotePreview {
  ticker:string;platform:Platform;address:string;amountUsd:number;tokenAmount:number;
  vendor:string|null;mode:'SWAP'|'RFQ';priceImpactPct:number|null;reportedFee:string|null;checkedAt:string;

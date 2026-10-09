@@ -3,10 +3,12 @@ import Link from 'next/link';
 import {useEffect,useRef,useState} from 'react';
 import {useWallet} from '@/components/sentinel/WalletContext';
 import {WalletControls} from '@/components/sentinel/WalletControls';
+import {ExecutionAuthorization} from '@/components/sentinel/ExecutionAuthorization';
 import {ArrowLeft,ArrowRight,CheckCircle2,Clock3,LockKeyhole,RefreshCw,ShieldAlert,ShieldCheck,TriangleAlert,XCircle} from 'lucide-react';
 import {useDesk} from '@/components/sentinel/DeskContext';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
 import {amountFor} from '@/lib/sentinel/basket';
+import {basketEvidenceKey} from '@/lib/sentinel/journey-evidence';
 import {formatUsd} from '@/lib/sentinel/model';
 import {preflightHeadline,requiresFundingReadout} from '@/lib/sentinel/preflight-presentation';
 import {
@@ -26,6 +28,7 @@ interface SimulatedLeg {
  priceImpactPct:number;
  maxSlippagePercent:number;
  gasLimit:string|null;
+ approvalTarget:string|null;
  builtTransaction:{present:boolean;dataBytes:number;nonzeroNativeValue:boolean};
  simulation:{
   status:'PASS'|'BLOCKED'|'UNKNOWN'|'EXPIRED';
@@ -54,7 +57,9 @@ interface WalletBalances {
  usdtCoversAmount:boolean;
  checkedAmountUsd:number;
  checkedAt:string;
- allowanceChecked:false;
+ allowanceChecked:boolean;
+ allowanceState:'NOT_REQUESTED'|'VERIFIED'|'UNAVAILABLE';
+ allowanceSnapshots:{spender:string;requiredUsdt:string;approvedUsdt:string;coversRequired:boolean}[];
  gasAdequacyChecked:false;
  gasPriceGwei:string|null;
  estimatedSwapGasBnb:string|null;
@@ -66,13 +71,14 @@ interface WalletBalances {
  bnbCoversStressScenario:boolean|null;
  noTransactions:true;
 }
-type BalanceCheck={sessionKey:string;walletAddress:string;amountUsd:number;gasLimit:string|null;data:WalletBalances};
+type AllowanceInput={spender:string;amountUsd:number};
+type BalanceCheck={sessionKey:string;walletAddress:string;amountUsd:number;gasLimit:string|null;allowanceKey:string;data:WalletBalances};
 
 const fmt=(n:number|null,d=8)=>n==null?'—':n.toLocaleString('en-US',{maximumFractionDigits:d});
 const expiry=(raw:string)=>new Date(raw).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
 export default function ExecutionLab(){
- const {basket,snapshot,feed,error,refresh}=useDesk();
+ const {basket,snapshot,feed,error,refresh,recordJourneyProof}=useDesk();
  const wallet=useWallet();
  // Simulation-only spend: intentionally independent of the investor's larger Basket Studio budget.
  const [budget,setBudget]=useState(25);
@@ -111,8 +117,13 @@ export default function ExecutionLab(){
  const blocked=scopedObservations.some(x=>x.status==='blocked');
  const expired=scopedObservations.some(x=>x.receipt&&Date.parse(x.receipt.expiresAt)<=nowMs);
  const latestBuiltGas=[...scopedObservations].reverse().find(x=>x.receipt?.gasLimit)?.receipt?.gasLimit??null;
+ const allowanceLegs:AllowanceInput[]=scopedObservations.filter(x=>!!x.receipt?.approvalTarget).map(x=>({
+  spender:x.receipt!.approvalTarget!,amountUsd:x.receipt!.amountUsd
+ }));
+ const allowanceKey=allowanceLegs.map(x=>x.spender+':'+x.amountUsd).join('|');
  const currentBalanceCheck=balanceCheck&&balanceCheck.sessionKey===wallet.sessionKey&&
-  balanceCheck.walletAddress===receiver&&balanceCheck.amountUsd===total&&balanceCheck.gasLimit===latestBuiltGas?
+  balanceCheck.walletAddress===receiver&&balanceCheck.amountUsd===total&&balanceCheck.gasLimit===latestBuiltGas&&
+  balanceCheck.allowanceKey===allowanceKey?
   balanceCheck.data:null;
  const currentOperation=useRef(operationKey);
  currentOperation.current=operationKey;
@@ -126,7 +137,7 @@ export default function ExecutionLab(){
   const id=window.setInterval(()=>setNowMs(Date.now()),1000);
   return()=>window.clearInterval(id);
  },[]);
- async function checkBalances(gasOverride?:string|null){
+ async function checkBalances(gasOverride?:string|null,allowanceOverride?:AllowanceInput[]){
   if(!addressOK||!budgetOK)return;
   const key=operationKey;
   fundingAbort.current?.abort();
@@ -136,16 +147,19 @@ export default function ExecutionLab(){
   try{
    const walletAddress=receiver.trim();
    const gasLimit=gasOverride===undefined?latestBuiltGas:gasOverride;
+   const allowanceInputs=allowanceOverride??allowanceLegs;
+   const checkedAllowanceKey=allowanceInputs.map(x=>x.spender+':'+x.amountUsd).join('|');
    const response=await fetch('/api/sentinel/wallet-readiness',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({walletAddress,amountUsd:total,gasLimit}),
+    body:JSON.stringify({walletAddress,amountUsd:total,gasLimit,allowanceLegs:allowanceInputs}),
     cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(11000)])
    });
    const data=await response.json();
    if(controller.signal.aborted||currentOperation.current!==key)return;
    if(!response.ok||data.kind!=='sentinel.bsc.readonly-wallet-balances')
     throw new Error(typeof data.error==='string'?data.error:'Could not verify balances on BSC mainnet.');
-   setBalanceCheck({sessionKey:wallet.sessionKey,walletAddress,amountUsd:total,gasLimit,data:data as WalletBalances});
+   setBalanceCheck({sessionKey:wallet.sessionKey,walletAddress,amountUsd:total,gasLimit,
+    allowanceKey:checkedAllowanceKey,data:data as WalletBalances});
   }catch(error){
    if(!controller.signal.aborted&&currentOperation.current===key)setBalanceError(error instanceof Error&&error.name!=='TimeoutError'?
     error.message:'BSC balance check timed out; balances remain unknown.');
@@ -184,7 +198,10 @@ export default function ExecutionLab(){
      if(!passed){
       // A simulation-only funding check follows a reported balance/gas failure;
       // no second user action, allowance request, signature or transaction.
-      if(requiresFundingReadout(passed,receipt.simulation.reason))void checkBalances(receipt.gasLimit);
+      if(requiresFundingReadout(passed,receipt.simulation.reason)||/allowance/i.test(receipt.simulation.reason||''))
+       void checkBalances(receipt.gasLimit,history.filter(x=>x.receipt?.approvalTarget).map(x=>({
+        spender:x.receipt!.approvalTarget!,amountUsd:x.receipt!.amountUsd
+       })));
       break;
      } // fail closed; no later leg is attempted after a blocked one.
     }catch(e){
@@ -195,7 +212,21 @@ export default function ExecutionLab(){
      setObservations([...history]);break;
     }
    }
-  }finally{if(runAbort.current===controller)runAbort.current=null;runRef.current=false;setRunning(false);}
+  }finally{
+   if(!controller.signal.aborted&&currentOperation.current===key){
+    const evidence=history.filter(x=>!!x.receipt);
+    if(evidence.length){
+     const anyBlocked=evidence.some(x=>x.status==='blocked');
+     const allPass=evidence.length===legs.length&&history.every(x=>x.status==='pass');
+     recordJourneyProof({kind:'SIMULATION',walletAddress:receiver.trim(),basketKey:basketEvidenceKey(basket),
+      recordedAt:new Date().toISOString(),observedLegs:evidence.length,totalLegs:legs.length,
+      state:anyBlocked?'SIMULATOR_BLOCKED':allPass?'SIMULATOR_PASSED':'PARTIAL_REHEARSAL',
+      source:'Binance Web3 unsigned build + simulator',
+      summary:evidence.map(x=>x.ticker+': '+(x.receipt?.simulation.reportedStatus||'UNKNOWN')).join(' · ').slice(0,260)});
+    }
+   }
+   if(runAbort.current===controller)runAbort.current=null;runRef.current=false;setRunning(false);
+  }
  }
  return <div className="desk-wrap desk-internal-page desk-sim-lab">
   <div className="desk-breadcrumb"><Link href="/sentinel">THE BRIEF</Link><span>→</span><Link href="/sentinel/baskets">BASKET STUDIO</Link><span>→</span><Link href="/sentinel/review">EXECUTION REVIEW</Link><span>→</span><b>SIMULATION LAB</b></div>
@@ -203,9 +234,9 @@ export default function ExecutionLab(){
    <div><Eyebrow>ROOM 05 / REAL TRANSACTION PREFLIGHT</Eyebrow>
     <h1>Build the trade.<br/><em>Test before spending.</em></h1>
     <p>For every basket leg, Sentinel obtains a current venue quote, asks Binance Web3 to construct the actual BSC spot transaction, then runs it through the official Transaction API simulator. No swap is signed or sent.</p></div>
-   <div className="desk-sim-lock"><LockKeyhole size={28}/><strong>0 ACTUAL ORDERS</strong><span>QUOTE → BUILD → SIMULATE</span><small>USER APPROVAL REQUIRED FOR ANY FUTURE SPEND</small></div>
+   <div className="desk-sim-lock"><LockKeyhole size={28}/><strong>SIMULATION ONLY</strong><span>QUOTE → BUILD → SIMULATE</span><small>SEPARATE USER-AUTHORIZED EXECUTION BELOW</small></div>
   </header>
-  <div className="desk-sim-band"><span>BNB SMART CHAIN · MAINNET 56</span><span>USDT → VERIFIED ISSUER TOKEN</span><span>NO EXECUTION</span></div>
+  <div className="desk-sim-band"><span>BNB SMART CHAIN · MAINNET 56</span><span>USDT → VERIFIED ISSUER TOKEN</span><span>EXPLICIT WALLET ACTIONS ONLY</span></div>
   <div className="desk-sim-layout">
    <section className="desk-sim-primary" aria-label="Execution simulation evidence">
     <div className="desk-sim-heading"><div><span>01 / SELECTED BASKET</span><h2>Every leg gets<br/><em>its own rehearsal.</em></h2></div><div className="desk-sim-budget"><span>PROPOSED TOTAL</span><strong>{formatUsd(total)}</strong><small>{legs.length} issuer-backed {legs.length===1?'leg':'legs'}</small></div></div>
@@ -233,6 +264,7 @@ export default function ExecutionLab(){
         <div><span>PRICE IMPACT</span><strong>{Number(data.priceImpactPct).toFixed(4)}%</strong></div>
         <div><span>BUILT CALL DATA</span><strong>{data.builtTransaction.dataBytes} bytes · no native value</strong></div>
         <div><span>MAX SLIPPAGE</span><strong>{data.maxSlippagePercent}%</strong></div>
+        <div><span>QUOTED SPENDER</span><strong>{data.approvalTarget?data.approvalTarget.slice(0,10)+'…'+data.approvalTarget.slice(-6):'Not identified'}</strong></div>
         <div><span>SIMULATOR REPORTED</span><strong>{data.simulation.reportedStatus}</strong></div>
         <div><span>BALANCE CHANGES</span><strong>{data.simulation.balanceChangeCount}</strong></div>
         <div><span>ALLOWANCE CHANGES</span><strong>{data.simulation.allowanceChangeCount}</strong></div>
@@ -254,6 +286,22 @@ export default function ExecutionLab(){
        'The official simulation endpoint receives genuine unsigned BSC transaction calldata only when you initiate this read-only test.'}</p>
      </div>
     </div>
+    <section className="desk-execution-decision" aria-label="Execution decision record">
+     <div className="desk-execution-decision-head"><span>THE AGENT'S DECISION RECORD</span><b>PLANNING IS NOT SPENDING</b></div>
+     <p>Sentinel works through the evidence in order. A passed check cannot override a later failure or missing permission.</p>
+     {([
+      ['01 / INVENTORY',feed==='live'?'OBSERVED':'UNAVAILABLE','Issuer inventory is not permission to trade.'],
+      ['02 / ALLOCATION',budgetOK?'BOUNDED':'NOT READY',budgetOK?legs.length+' issuer legs · '+formatUsd(total)+' simulation-only.':'Select a valid basket and bounded simulation size.'],
+      ['03 / WALLET SESSION',addressOK?'CONNECTED BSC':'NOT READY',addressOK?'Connected sender on chain 56; no signing requested.':'Connect the intended BSC wallet to simulate.'],
+      ['04 / ROUTE & SIMULATOR',complete?'PREDICTED PASS':blocked?'BLOCKED':expired?'EXPIRED':'NOT VERIFIED',blocked?scopedObservations.find(x=>x.status==='blocked')?.reason||'The simulator rejected a leg.':complete?'All legs returned predicted success, but no onchain execution occurred.':'Trigger quote, unsigned build and simulation on each leg.'],
+      ['05 / FUNDS & ALLOWANCES',!currentBalanceCheck?'NOT VERIFIED':currentBalanceCheck.usdtCoversAmount&&currentBalanceCheck.bnbCoversBufferedSwapEstimate===true?'OBSERVED SUFFICIENT':'NOT CLEARED',!currentBalanceCheck?'No onchain funding diagnostic has been completed.':currentBalanceCheck.usdtCoversAmount?'Observed public balances are not approval or eligibility.':'USDT is below the proposed basket amount.'],
+      ['06 / ISSUER ELIGIBILITY','UNVERIFIED','No authoritative end-user, product, jurisdiction and wallet trading clearance.'],
+      ['07 / SWAP IMPLEMENTATION','UNVERIFIED','Nested LiquidMesh calldata and upgrade authorization remain unaudited.'],
+      ['08 / FINAL RELEASE','LOCKED','No wallet approvals, live swaps, filled orders or receipts may be claimed.']
+     ] as const).map(check=><div className="desk-execution-check" key={check[0]}>
+      <span>{check[0]}</span><div><b>{check[1]}</b><small>{check[2]}</small></div>
+     </div>)}
+    </section>
    </section>
    <aside className="desk-sim-rail">
     <div className="desk-sim-rail-head"><span>02 / WALLET-BOUND PREFLIGHT</span><h2>Connect once.<br/><em>Simulate the right account.</em></h2><p>The connected BSC account is the sole sender for quotes, transaction builds, and simulation. Switch accounts or networks and the old results are invalidated automatically.</p></div>
@@ -294,10 +342,10 @@ export default function ExecutionLab(){
     </div>
     <section className="desk-sim-funding" aria-label="Read-only wallet funding check">
      <div className="desk-sim-funding-head">
-      <div><strong>03 / ONCHAIN FUNDING DIAGNOSTIC</strong><p>Read public balances for the connected BSC account. Funding-related simulation failures automatically refresh this diagnostic. No signatures required.</p></div>
+      <div><strong>03 / ONCHAIN WALLET DIAGNOSTIC</strong><p>Read public USDT, BNB and exact quoted-spender allowances for the connected BSC account. No signatures required.</p></div>
       <button type="button" onClick={()=>void checkBalances()}
        disabled={checkingBalances||running||!addressOK||!budgetOK}>
-       {checkingBalances?'CHECKING…':currentBalanceCheck?'Refresh funding check':'Check BSC balances & gas'}
+       {checkingBalances?'CHECKING…':currentBalanceCheck?'Refresh wallet check':'Check balances & allowances'}
        <RefreshCw size={14} className={checkingBalances?'desk-spin':undefined}/>
       </button>
      </div>
@@ -318,7 +366,19 @@ export default function ExecutionLab(){
       <div><span>3M GAS CAP / STRESS SCENARIO</span><strong>{currentBalanceCheck.stressScenarioBnb===null?'—':currentBalanceCheck.stressScenarioBnb+' BNB'}</strong>
        <small className={currentBalanceCheck.bnbCoversStressScenario===false?'missing':'sufficient'}>{currentBalanceCheck.bnbCoversStressScenario===null?'Unavailable · network gas price missing':
         currentBalanceCheck.bnbCoversStressScenario?'BNB covers this conservative cap scenario':'BNB below the conservative cap scenario'}</small></div>
-      <p>Read-only BSC mainnet snapshot checked at {new Date(currentBalanceCheck.checkedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. The built-swap estimate requires a gas limit returned in this session; otherwise it stays unavailable. The separate 3,000,000-gas stress scenario uses Sentinel's maximum allowed limit and current gas price, plus a 50% buffer. It is a <b>planning ceiling, not the expected swap cost</b>. Both exclude separate token approval and other basket legs. Allowance remains unverified. No trade or wallet authorization.</p>
+      <div><span>USDT ALLOWANCE / QUOTED SPENDER</span><strong>{currentBalanceCheck.allowanceState==='VERIFIED'?
+       currentBalanceCheck.allowanceSnapshots.every(x=>x.coversRequired)?'CHECKED SPENDERS COVERED':'CHECKED SPENDERS SHORT':
+       currentBalanceCheck.allowanceState==='UNAVAILABLE'?'READ FAILED':'NOT VERIFIED'}</strong>
+       <small className={currentBalanceCheck.allowanceState==='VERIFIED'&&currentBalanceCheck.allowanceSnapshots.every(x=>x.coversRequired)?'sufficient':'missing'}>{currentBalanceCheck.allowanceState==='VERIFIED'?
+        'Public ERC-20 allowance, read for identified quote spenders only':
+        currentBalanceCheck.allowanceState==='UNAVAILABLE'?'Unable to read allowances; no value inferred':
+        'No valid spender identified from a simulated quote'}</small></div>
+      {currentBalanceCheck.allowanceSnapshots.map(x=><div key={x.spender}>
+       <span>SPENDER {x.spender.slice(0,8)}…{x.spender.slice(-6)}</span>
+       <strong>{x.approvedUsdt} / {x.requiredUsdt} USDT</strong>
+       <small className={x.coversRequired?'sufficient':'missing'}>{x.coversRequired?'Allowance meets tested amount':'Allowance below tested amount'} · read-only, no authorization</small>
+      </div>)}
+      <p>Read-only BSC mainnet snapshot checked at {new Date(currentBalanceCheck.checkedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. The built-swap gas estimate and separate 3,000,000-gas stress scenario each use a 50% buffer; neither guarantees the fee. These exclude separate token approvals and other basket legs. Allowance checks cover only the quote-identified spenders above; an unknown spender is NOT proof that approval is unnecessary. No trade or wallet authorization.</p>
      </div>}
     </section>
     <div className="desk-sim-rails"><div><span>CHAIN</span><strong>BSC / 56</strong></div><div><span>INPUT TOKEN</span><strong>USDT / 18 DECIMALS</strong></div><div><span>MAX PER LEG</span><strong>$25 USDT</strong></div><div><span>MAX BASKET</span><strong>$50 USDT</strong></div><div><span>SLIPPAGE LIMIT</span><strong>0.50%</strong></div><div><span>PRICE IMPACT LIMIT</span><strong>2.00%</strong></div><div><span>SUPPORTED PATH</span><strong>LIQUIDMESH SWAP</strong></div></div>
@@ -329,7 +389,9 @@ export default function ExecutionLab(){
     </button>
     {issue&&<p className="desk-sim-note" role="status">{issue}</p>}
     {!issue&&<p className="desk-sim-note">Separate quote/build/simulate calls per leg. Nothing signs, approves or broadcasts. A blocked leg halts the batch.</p>}
-    <div className="desk-sim-security"><LockKeyhole size={20}/><div><b>Actual spending is gated.</b><p>Simulations do not prove you hold the tokens, that allowances exist, or that the issuer permits you to trade. Wallet-connected confirmation and verified onchain receipts are separate milestones. A passing simulation does not give the app authority to move funds.</p></div></div>
+    <ExecutionAuthorization legs={legs.map(x=>({ticker:x.ticker,platform:x.platform,amountUsd:x.amountUsd}))}
+     enabled={!running&&addressOK&&budgetOK&&feed==='live'} operationKey={operationKey}/>
+    <div className="desk-sim-security"><LockKeyhole size={20}/><div><b>Actual spending is gated.</b><p>Simulations do not prove you hold the tokens, that allowances exist, or that the issuer permits you to trade. Mainnet spending remains hard-blocked until the nested router ABI and issuer-specific end-user eligibility are independently verified. A passing simulation, funded wallet, or configured allowlist cannot bypass either blocker.</p></div></div>
     <Link href="/sentinel/review" className="desk-sim-back"><ArrowLeft size={14}/> Return to quote review</Link>
    </aside>
   </div>

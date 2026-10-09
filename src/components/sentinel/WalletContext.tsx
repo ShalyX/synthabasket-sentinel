@@ -8,11 +8,13 @@ type RpcProvider={
  removeListener?:(event:string,callback:(value:unknown)=>void)=>void;
 };
 type WalletChoice={id:string;name:string;provider:RpcProvider};
+export type WalletUnsignedTx={to:string;data:string;value:'0x0';gas?:string|null};
 type WalletState={
  choices:WalletChoice[];
  address:string|null;chainId:number|null;label:string|null;
  ready:boolean;busy:boolean;error:string|null;sessionKey:string;
  connect:(id:string)=>Promise<void>;disconnect:()=>void;switchToBsc:()=>Promise<void>;
+ submitReviewedTransaction:(tx:WalletUnsignedTx,expiresAt:number)=>Promise<string>;
  discover:()=>void;
 };
 const Context=createContext<WalletState|null>(null);
@@ -146,10 +148,30 @@ export function WalletProvider({children}:{children:ReactNode}){
   window.addEventListener('focus',focus);
   return()=>window.removeEventListener('focus',focus);
  },[]);
+ const submitReviewedTransaction=useCallback(async(tx:WalletUnsignedTx,expiresAt:number):Promise<string>=>{
+  const provider=active.current;
+  const sender=address;
+  const version=attempt.current;
+  if(!provider||!sender||chainId!==56||busy)throw Error('Reconnect the active BSC wallet before submitting.');
+  if(!/^0x[0-9a-f]{40}$/i.test(tx.to)||!/^0x[0-9a-f]{8,40000}$/i.test(tx.data)||tx.value!=='0x0'||
+     (tx.gas!=null&&!/^0x[0-9a-f]{1,8}$/i.test(tx.gas)))throw Error('Reviewed transaction fields are invalid.');
+  const [accounts,chain]=await Promise.all([provider.request({method:'eth_accounts'}),provider.request({method:'eth_chainId'})]);
+  if(version!==attempt.current||provider!==active.current||parseAccount(accounts)?.toLowerCase()!==sender.toLowerCase()||
+     parseChainId(chain)!==56)throw Error('Wallet account or network changed; create a new execution review.');
+  if(!Number.isFinite(expiresAt)||expiresAt-Date.now()<2000||expiresAt-Date.now()>30000)
+   throw Error('Quote review expired; refresh before requesting your wallet signature.');
+  // This wallet-native request is invoked ONLY by an explicit spend/approval button.
+  // No server credentials, private keys or silent sign/broadcast workflow.
+  const hash=await provider.request({method:'eth_sendTransaction',params:[{
+   from:sender,to:tx.to,data:tx.data,value:'0x0',...(tx.gas?{gas:tx.gas}:{})
+  }]});
+  if(typeof hash!=='string'||!/^0x[0-9a-f]{64}$/i.test(hash))throw Error('Wallet did not return a valid transaction hash.');
+  return hash;
+ },[address,chainId,busy]);
  const value=useMemo<WalletState>(()=>({
   choices,address,chainId,label,ready:!!address&&chainId===56,busy,error,
-  sessionKey:walletKey(address,chainId,revision),connect,disconnect,switchToBsc,discover
- }),[choices,address,chainId,label,busy,error,revision,connect,disconnect,switchToBsc,discover]);
+  sessionKey:walletKey(address,chainId,revision),connect,disconnect,switchToBsc,submitReviewedTransaction,discover
+ }),[choices,address,chainId,label,busy,error,revision,connect,disconnect,switchToBsc,submitReviewedTransaction,discover]);
  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export function useWallet(){

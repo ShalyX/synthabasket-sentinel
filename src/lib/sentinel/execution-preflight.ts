@@ -51,6 +51,7 @@ export interface RouteCandidate{
  toTokenAmount:string;
  executionMode:'SWAP';
  priceImpactPercent:number;
+ approveTarget:string|null;
 }
 export function selectRouteForSimulation(rows:unknown,expectedRawAmount:string):Validation<RouteCandidate>{
  if(!Array.isArray(rows))return {ok:false,message:'Binance did not return an array of venue routes.'};
@@ -60,11 +61,16 @@ export function selectRouteForSimulation(rows:unknown,expectedRawAmount:string):
  if(!route)return {ok:false,message:'No supported LiquidMesh SWAP quote for this exact BSC USDT amount. RFQ and other routes are not simulated here.'};
  if(route.quoteId.length>256||!integer(route.toTokenAmount))
   return {ok:false,message:'Swap quote ID or received amount is malformed.'};
+ // The quote's documented approveTarget is a spender, NOT necessarily tx.to.
+ // Missing spender remains unverified and is never inferred from the router.
+ if(route.approveTarget!==null&&route.approveTarget!==undefined&&!validAddress(route.approveTarget))
+  return {ok:false,message:'Quoted ERC-20 spender is malformed.'};
  const impact=route.priceImpactPercent==null?NaN:Number(route.priceImpactPercent);
  if(!Number.isFinite(impact)||Math.abs(impact)>SIMULATION_MAX_IMPACT_PERCENT)
   return {ok:false,message:'Quote impact is missing or exceeds the strict 2% simulation guard.'};
  return {ok:true,value:{quoteId:route.quoteId,vendorName:'LiquidMesh',executionMode:'SWAP',fromTokenAmount:expectedRawAmount,
-  toTokenAmount:route.toTokenAmount,priceImpactPercent:impact}};
+  toTokenAmount:route.toTokenAmount,priceImpactPercent:impact,
+  approveTarget:validAddress(route.approveTarget)?route.approveTarget.toLowerCase():null}};
 }
 
 export interface CheckedEvmTransaction{

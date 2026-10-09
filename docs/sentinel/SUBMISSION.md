@@ -11,15 +11,15 @@
 
 **Name:** SynthaBasket Sentinel
 
-**Category:** BSC tokenized-stock research and pretrade basket analysis.
+**Category:** BSC tokenized-stock basket execution planner, quote/build/simulation agent and read-only portfolio monitor.
 
-**One-line description:** Compare bStocks and Ondo versions of the same stock using real BSC token contracts, issuer-specific market data and fresh Binance Web3 venue quotes—before putting together a basket.
+**One-line description:** Build issuer-specific BSC stock baskets, rehearse each swap using real unsigned Binance Web3 transactions and deterministic risk checks, expose blocked execution safely, and monitor actual wallet allocations.
 
 **Project overview (review before use):** Sentinel is an independent research desk for tokenized equities on BNB Chain. It solves a subtle pricing trap: two wrappers of the same underlying stock can have different contract addresses, token-to-share conversion ratios, prices, and executable venue indications. Sentinel obtains actual BSC RWA issuer inventory through authenticated Binance Web3 APIs; normalizes reference parity and live $10 SWAP quote output into share-equivalent exposure; and keeps the resulting comparison valid only while the quoted routes remain fresh. A local Basket Studio permits explicit issuer and weight selection, and a deterministic Execution Review checks quote expiry, impact and basis. The optional Binance Agentic Wallet handoff can import a sanitized owner-operated CLI quote observation, but no cloud wallet execution is performed. The app does not sign, approve, broadcast or execute trades.
 
 **Public source:** https://github.com/ShalyX/synthabasket-sentinel
 **Working public site:** https://synthabasket-sentinel.vercel.app/sentinel
-**Guided three-move demo:** https://synthabasket-sentinel.vercel.app/sentinel/demo
+**Six-decision end-to-end Guided Demo (branch preview until merge):** https://synthabasket-sentinel.vercel.app/sentinel/demo
 **Primary instrument proof:** https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA
 **Detailed judge runbook:** https://github.com/ShalyX/synthabasket-sentinel/blob/main/docs/sentinel/JUDGE_RUNBOOK.md
 **Video link:** NOT RECORDED / UPLOADED YET. Fill in only after verifying a working public video. Recommended length is under 4 minutes.
@@ -37,7 +37,8 @@
 | Deterministic safety/freshness review | VERIFIED AS RESEARCH | Tests and live browser review UI; not execution authorization |
 | Local user-run Binance Agentic Wallet CLI quote | VERIFIED AS LOCAL OBSERVATION | Owner-run 10 USDT read-only quote and sanitized JSON |
 | Full simultaneous CLI-versus-hosted live venue comparison | NOT YET VERIFIED | Comparison expired before both results were current |
-| Real purchased stock tokens / simulated and executed trade | NOT IMPLEMENTED | No onchain execution transaction or funding proof |
+| Real transaction preflight simulation | VERIFIED, often BLOCKED | Binance authenticated quote/build/simulate tested against public BSC wallet, insufficient funding; never a fill |
+| Real purchased stock tokens / settled trade | NOT VERIFIED / NO GO | No onchain stock-token purchase, wallet authorization or settlement was performed |
 | Autonomous Agent Studio agent and x402 identity/funding | NOT IMPLEMENTED | Not claimed |
 
 Current issuer inventories, venue prices and modes can change after the verified observations. Avoid presenting historical numbers as currently quoted values.
