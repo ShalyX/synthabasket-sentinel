@@ -1,6 +1,6 @@
 /**
  * Read-only production smoke test for Sentinel M9's REAL basket orchestrator.
- * Uses a deliberately unowned/unfunded BSC address by default. Never signs or broadcasts.
+ * Uses the public 0x...dEaD burn address, which can hold real balances, as a negative-control sender. Never signs or broadcasts.
  * Prints concise provider evidence only (no calldata or credentials).
  * Run: npx tsx scripts/m10-production-rehearsal.ts
  */
@@ -28,7 +28,7 @@ async function main() {
  const rec=recoveryDecision(state,Date.now());
  const newPlan=planRehearsal(basket,inventory.tokens,walletAddress,25,Date.now(),state);
  console.log(JSON.stringify({source:origin,observedAt:new Date().toISOString(),
-  walletCategory:'deliberately unfunded, unowned test address',
+  walletCategory:'public burn-address negative control; not an authenticated owner wallet, balances may exist',
   inventoryContracts:inventory.tokens.length,basket:'NVDA bStocks 60% + AMD bStocks 40%',budgetUsd:25,
   requests,phase:state.phase,legs:state.legs.map(x=>({ticker:x.leg.ticker,platform:x.leg.platform,
    amountUsd:x.leg.amountUsd,phase:x.phase,reason:x.reason,simulator:x.receipt?.simulation.reportedStatus??null,
@@ -37,7 +37,7 @@ async function main() {
   noSigning:state.noSigning,noOrders:state.noOrders,
   recoveryAction:rec.action,automaticRetry:rec.autoRetry,recoveryPlanAvailable:newPlan.ok,
   filledPurchaseConfirmed:false},null,2));
- if(state.phase==='PREDICTED_PASS')throw Error('Unexpected pass for default unfunded QA address; investigate provider evidence');
+ if(state.phase==='PREDICTED_PASS')throw Error('Unexpected simulator pass for the burn-address negative control; investigate provider evidence');
  if(requests.length!==1||state.legs[1]?.phase!=='NOT_ATTEMPTED')throw Error('STOP INVARIANT FAILED: subsequent leg attempted after first failure');
 }
 main().catch(error=>{console.error(error instanceof Error?error.message:String(error));process.exitCode=1;});
