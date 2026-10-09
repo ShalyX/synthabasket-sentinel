@@ -22,9 +22,12 @@ const make=(previous?:ReturnType<typeof planRehearsal>)=>{
 const proof=(leg:ReturnType<typeof make>['legs'][number]['leg'],status:'PASS'|'BLOCKED'|'UNKNOWN'='PASS')=>({
  kind:'sentinel.bsc.sandbox-preflight',chainId:56,ticker:leg.ticker,platform:leg.platform,
  tokenContract:leg.tokenContract,amountUsd:leg.amountUsd,
+ symbol:leg.ticker,quotedTokenAmount:0.25,normalizedShareUnits:0.25,routeMode:'SWAP',
+ routeVendor:'LiquidMesh',priceImpactPct:0,maxSlippagePercent:0.5,gasLimit:'200000',
+ approvalTarget:a,builtTransaction:{present:true,dataBytes:200,nonzeroNativeValue:false},
  inspectedAt:new Date(now+1_000).toISOString(),expiresAt:new Date(now+20_000).toISOString(),
  state:status==='PASS'?'SIMULATION_PASSED':'NOT_READY',
- simulation:{status,reportedStatus:status==='PASS'?'SUCCESS':'FAILED',reason:status==='PASS'?null:'Insufficient USDT balance'},
+ simulation:{status,reportedStatus:status==='PASS'?'SUCCESS':'FAILED',reason:status==='PASS'?null:'Insufficient USDT balance',balanceChangeCount:0,allowanceChangeCount:0,unexpectedApprovalIncrease:false},
  executed:false,tradeAuthorized:false,signatureRequested:false,approvalsRequested:false,broadcastRequested:false
 });
 test('exact basket weights, contracts, budget and wallet are frozen in each plan',()=>{
