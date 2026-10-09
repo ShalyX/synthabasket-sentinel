@@ -31,12 +31,12 @@ test('receipt Transfer proof requires exact contract, indexed owner and anchored
 });
 
 test('observed 10-word LiquidMesh envelope can match amounts but never authorize an opaque route',async()=>{
- const {inspectObservedLiquidMeshCalldata,OBSERVED_BSC_LIQUIDMESH_ROUTER}=await import('./route-audit');
+ const {inspectObservedLiquidMeshCalldata,OBSERVED_BSC_LIQUIDMESH_ROUTER,OFFICIAL_LIQUIDMESH_BSC_ROUTER}=await import('./route-audit');
  const w=(x:bigint)=>x.toString(16).padStart(64,'0');
  const addr=(x:string)=>x.slice(2).toLowerCase().padStart(64,'0');
  const usdt='0x55d398326f99059ff775485246999027b3197955';
  const nvdab='0x02fca66c1d1afb4e2a7884261eb00f63598a7436';
- const head=[w(123n),w(0n),addr(wallet),addr(usdt),w(1000000000000000000n),
+ const head=[w(123n),w(0n),addr(OFFICIAL_LIQUIDMESH_BSC_ROUTER),addr(usdt),w(1000000000000000000n),
   addr(nvdab),w(995n),addr(wallet),w(1000n),w(320n)].join('');
  const data='0xad43f73d'+head+w(64n)+'11'.repeat(64);
  const tx={from:wallet,to:OBSERVED_BSC_LIQUIDMESH_ROUTER,data,value:'0' as const,gas:'250000'};
@@ -45,6 +45,7 @@ test('observed 10-word LiquidMesh envelope can match amounts but never authorize
  const parsed=inspectObservedLiquidMeshCalldata(tx,expected);
  assert.equal(parsed.ok,true);
  if(parsed.ok){assert.equal(parsed.value.opaquePayloadBytes,64);
+  assert.equal(parsed.value.innerRouterAddress,OFFICIAL_LIQUIDMESH_BSC_ROUTER);
   assert.equal(parsed.value.recipientProven,false);
   assert.equal(parsed.value.permissionToSpend,false);}
  assert.equal(verifyKnownRouterSemantics(tx,expected).ok,false);
@@ -60,4 +61,6 @@ test('observed 10-word LiquidMesh envelope can match amounts but never authorize
  assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:data.slice(0,-64)},expected).ok,false);
  assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:'0x095ea7b3'+data.slice(10)},expected).ok,false);
  assert.equal(inspectObservedLiquidMeshCalldata({...tx,to:wallet},expected).ok,false);
+ const changedInnerRouter='0xad43f73d'+data.slice(10,10+64*2)+addr(wallet)+data.slice(10+64*3);
+ assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:changedInnerRouter},expected).ok,false);
 });

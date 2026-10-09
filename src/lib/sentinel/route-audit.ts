@@ -1,8 +1,10 @@
 import {type CheckedEvmTransaction,validAddress, type Validation} from './execution-preflight';
 
 /**
- * Until a real Binance LiquidMesh tx.to is verified on BSC and its ABI is
- * independently decoded, no generic selector/address allowlist can certify a trade.
+ * The Binance-aggregated tx.to is a Diamond-style outer router, NOT the
+ * independently published LiquidMesh EVM router (which is an inner proxy).
+ * The Binance outer swap facet, the inner implementation and opaque nested
+ * route instructions lack trustworthy full ABI/source verification.
  * Auditors must add an ABI-specific decoder; never weaken this to matching
  * a four-byte selector or searching calldata for addresses.
  */
@@ -12,11 +14,16 @@ export interface BoundSwapFacts{
 }
 export const OBSERVED_BSC_LIQUIDMESH_ROUTER='0xb44446b0c8e56988c34f7ff73ae904982b5fdda5';
 export const OBSERVED_BSC_SWAP_SELECTOR='0xad43f73d';
+// Vendor-owned contract path, independently published at docs.liquidmesh.io/docs/smart-contracts.
+// This is NOT the Binance aggregator tx.to; the first address is inside the
+// Binance-built calldata and LiquidMesh's proxy dispatches to its own implementation.
+export const OFFICIAL_LIQUIDMESH_BSC_ROUTER='0x3d90f66b534dd8482b181e24655a9e8265316be9';
+export const OFFICIAL_LIQUIDMESH_DEFAULT_SPENDER='0x8157a9d65807521fbb8db8f37eeecefdd247e9b1';
 /** This is an observed ABI-shaped envelope, NOT a verified contract ABI. */
 export interface StructuralSwapEvidence{
  selector:string;inputToken:string;outputToken:string;inputAmountRaw:string;
  minimumOutputRaw:string;quotedOutputRaw:string;opaquePayloadBytes:number;
- feeOrControlAddress:string;otherControlAddress:string;
+ innerRouterAddress:string;otherControlAddress:string;
  recipientProven:false;opaqueCallsVerified:false;permissionToSpend:false;
 }
 const decimal=(x:string)=>/^(0|[1-9][0-9]{0,77})$/.test(x);
@@ -61,11 +68,13 @@ export function inspectObservedLiquidMeshCalldata(
   return {ok:false,message:'Calldata length does not match its declared opaque payload.'};
  const controlA=wordAddress(words[2]),controlB=wordAddress(words[7]);
  if(!controlA||!controlB)return {ok:false,message:'Envelope contains malformed control addresses.'};
+ if(controlA!==OFFICIAL_LIQUIDMESH_BSC_ROUTER)
+  return {ok:false,message:'Binance-built calldata does not reference the official published LiquidMesh BSC router.'};
  return {ok:true,value:{
   selector:OBSERVED_BSC_SWAP_SELECTOR,inputToken:inToken,outputToken:outToken,
   inputAmountRaw:amount.toString(),minimumOutputRaw:minOutput.toString(),
   quotedOutputRaw:quoted.toString(),opaquePayloadBytes:Number(byteLength),
-  feeOrControlAddress:controlA,otherControlAddress:controlB,
+  innerRouterAddress:controlA,otherControlAddress:controlB,
   recipientProven:false,opaqueCallsVerified:false,permissionToSpend:false
  }};
 }

@@ -32,6 +32,7 @@ console.log(JSON.stringify({kind:'sentinel.bsc.offline-calldata-inspection',
  output:checked.value.outputToken,amountRaw:checked.value.inputAmountRaw,
  minimumRaw:checked.value.minimumOutputRaw,quotedOutputRaw:checked.value.quotedOutputRaw,
  opaqueBytes:checked.value.opaquePayloadBytes,
+ innerRouterAddress:checked.value.innerRouterAddress,
  recipientProven:checked.value.recipientProven,opaqueCallsVerified:checked.value.opaqueCallsVerified
  }:{state:'INVALID',reason:checked.message},
  executable:stillBlocked.ok,releaseGate:'DENY'},null,2));
