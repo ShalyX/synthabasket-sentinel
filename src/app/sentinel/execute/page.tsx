@@ -9,6 +9,7 @@ import {useDesk} from '@/components/sentinel/DeskContext';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
 import {amountFor} from '@/lib/sentinel/basket';
 import {basketEvidenceKey} from '@/lib/sentinel/journey-evidence';
+import {planRehearsal,rehearse,expireRehearsal,recoveryDecision,type Rehearsal} from '@/lib/sentinel/execution-orchestrator';
 import {formatUsd} from '@/lib/sentinel/model';
 import {preflightHeadline,requiresFundingReadout} from '@/lib/sentinel/preflight-presentation';
 import {
@@ -85,6 +86,8 @@ export default function ExecutionLab(){
  const receiver=wallet.address??'';
  const [running,setRunning]=useState(false),[observations,setObservations]=useState<Observation[]>([]);
  const [runId,setRunId]=useState(0);
+ const [orchestration,setOrchestration]=useState<Rehearsal|null>(null);
+ const [recoveryError,setRecoveryError]=useState<string|null>(null);
  const [evidenceKey,setEvidenceKey]=useState<string|null>(null);
  const [checkingBalances,setCheckingBalances]=useState(false);
  const [balanceCheck,setBalanceCheck]=useState<BalanceCheck|null>(null);
@@ -115,6 +118,9 @@ export default function ExecutionLab(){
  const complete=scopedObservations.length===legs.length&&scopedObservations.length>0&&scopedObservations.every(x=>
   x.status==='pass'&&!!x.receipt&&Date.parse(x.receipt.expiresAt)>nowMs);
  const blocked=scopedObservations.some(x=>x.status==='blocked');
+ const currentRun=orchestration?expireRehearsal(orchestration,nowMs||Date.now()):null;
+ const recovery=currentRun?recoveryDecision(currentRun,nowMs||Date.now()):null;
+ const canRehearse=!currentRun||recovery?.action==='REHEARSE_ALL_FRESH';
  const expired=scopedObservations.some(x=>x.receipt&&Date.parse(x.receipt.expiresAt)<=nowMs);
  const latestBuiltGas=[...scopedObservations].reverse().find(x=>x.receipt?.gasLimit)?.receipt?.gasLimit??null;
  const allowanceLegs:AllowanceInput[]=scopedObservations.filter(x=>!!x.receipt?.approvalTarget).map(x=>({
@@ -130,7 +136,7 @@ export default function ExecutionLab(){
  useEffect(()=>{
   runAbort.current?.abort();
   fundingAbort.current?.abort();
-  setObservations([]);setBalanceCheck(null);setBalanceError(null);
+  setObservations([]);setBalanceCheck(null);setBalanceError(null);setOrchestration(null);setRecoveryError(null);
  },[operationKey]);
  useEffect(()=>{
   setNowMs(Date.now());
@@ -166,68 +172,56 @@ export default function ExecutionLab(){
   }finally{if(fundingAbort.current===controller){fundingAbort.current=null;setCheckingBalances(false);}}
  }
  async function runSimulation(){
-  if(runRef.current||issue||!wallet.ready)return;
+  if(runRef.current||issue||!wallet.ready||!snapshot||!canRehearse)return;
   const key=operationKey;
+  const planned=planRehearsal(basket,snapshot.tokens,receiver.trim(),budget,Date.now(),currentRun??undefined);
+  if(!planned.ok){setRecoveryError(planned.reason);return;}
   const controller=new AbortController();
-  runAbort.current=controller;
-  runRef.current=true;setRunning(true);setEvidenceKey(key);setObservations([]);setRunId(n=>n+1);
-  const history:Observation[]=[];
+  runAbort.current=controller;runRef.current=true;
+  setRunning(true);setEvidenceKey(key);setObservations([]);setRecoveryError(null);
+  setRunId(n=>n+1);
   try{
-   for(const leg of legs){
-    if(controller.signal.aborted||currentOperation.current!==key)break;
-    history.push({ticker:leg.ticker,status:'running'});setObservations([...history]);
-    try{
-     const body=JSON.stringify({ticker:leg.ticker,platform:leg.platform,amountUsd:leg.amountUsd,walletAddress:receiver.trim()});
-     const response=await fetch('/api/sentinel/simulate',{
-      method:'POST',headers:{'Content-Type':'application/json'},body,
-      cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(55000)])
-     });
-     const data=await response.json();
-     if(controller.signal.aborted||currentOperation.current!==key)break;
-     if(!response.ok||data.kind!=='sentinel.bsc.sandbox-preflight'){
-      history[history.length-1]={ticker:leg.ticker,status:'blocked',
-       reason:typeof data.error==='string'?data.error:'Transaction build or simulation was unavailable.'};
-      setObservations([...history]);break;
-     }
-     const receipt=data as SimulatedLeg;
-     const passed=receipt.simulation.status==='PASS'&&receipt.state==='SIMULATION_PASSED'&&
-      receipt.executed===false&&receipt.tradeAuthorized===false&&receipt.signatureRequested===false;
-     history[history.length-1]={ticker:leg.ticker,status:passed?'pass':'blocked',receipt,
-      reason:passed?undefined:receipt.simulation.reason||'The simulation did not pass.'};
-     setObservations([...history]);
-     if(!passed){
-      // A simulation-only funding check follows a reported balance/gas failure;
-      // no second user action, allowance request, signature or transaction.
-      if(requiresFundingReadout(passed,receipt.simulation.reason)||/allowance/i.test(receipt.simulation.reason||''))
-       void checkBalances(receipt.gasLimit,history.filter(x=>x.receipt?.approvalTarget).map(x=>({
-        spender:x.receipt!.approvalTarget!,amountUsd:x.receipt!.amountUsd
-       })));
-      break;
-     } // fail closed; no later leg is attempted after a blocked one.
-    }catch(e){
-     if(controller.signal.aborted||currentOperation.current!==key)break;
-     history[history.length-1]={ticker:leg.ticker,status:'blocked',
-      reason:e instanceof Error&&e.name==='TimeoutError'?'Simulation timed out. No transaction was sent.':
-       'Simulation request could not complete. No transaction was sent.'};
-     setObservations([...history]);break;
-    }
+   const result=await rehearse(planned.value,async(leg,address,signal)=>{
+    const response=await fetch('/api/sentinel/simulate',{
+     method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({ticker:leg.ticker,platform:leg.platform,amountUsd:leg.amountUsd,walletAddress:address}),
+     cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(55000)])
+    });
+    const result:unknown=await response.json();
+    return {ok:response.ok,status:response.status,body:result};
+   },controller.signal,state=>{
+    if(controller.signal.aborted||currentOperation.current!==key)return;
+    setOrchestration(state);
+    setObservations(state.legs.filter(x=>x.phase!=='NOT_ATTEMPTED').map(x=>({
+     ticker:x.leg.ticker,status:x.phase==='RUNNING'?'running':x.phase==='PASS'?'pass':'blocked',
+     reason:x.reason??undefined,receipt:x.receipt??undefined
+    })));
+   },Date.now,()=>currentOperation.current===key);
+   if(controller.signal.aborted||currentOperation.current!==key)return;
+   const findings=result.legs.filter(x=>!!x.receipt);
+   if(findings.length){
+    recordJourneyProof({kind:'SIMULATION',walletAddress:receiver.trim(),basketKey:basketEvidenceKey(basket),
+     recordedAt:new Date().toISOString(),observedLegs:findings.length,totalLegs:legs.length,
+     state:result.phase==='PREDICTED_PASS'?'SIMULATOR_PASSED':
+      result.phase==='BLOCKED'?'SIMULATOR_BLOCKED':'PARTIAL_REHEARSAL',
+     source:'Binance Web3 unsigned build + simulator',
+     summary:findings.map(x=>x.leg.ticker+': '+x.receipt!.simulation.reportedStatus).join(' · ').slice(0,260)});
    }
+   const firstFailure=result.legs.find(x=>x.receipt&&x.phase!=='PASS');
+   if(firstFailure&&requiresFundingReadout(false,firstFailure.receipt?.simulation.reason??null)){
+    void checkBalances(firstFailure.receipt?.gasLimit??null,result.legs.filter(x=>x.receipt?.approvalTarget).map(x=>({
+     spender:x.receipt!.approvalTarget!,amountUsd:x.leg.amountUsd
+    })));
+   }
+  }catch(e){
+   if(!controller.signal.aborted&&currentOperation.current===key)
+    setRecoveryError(e instanceof Error?'Orchestrator could not complete its read-only rehearsal.':'Rehearsal unavailable.');
   }finally{
-   if(!controller.signal.aborted&&currentOperation.current===key){
-    const evidence=history.filter(x=>!!x.receipt);
-    if(evidence.length){
-     const anyBlocked=evidence.some(x=>x.status==='blocked');
-     const allPass=evidence.length===legs.length&&history.every(x=>x.status==='pass');
-     recordJourneyProof({kind:'SIMULATION',walletAddress:receiver.trim(),basketKey:basketEvidenceKey(basket),
-      recordedAt:new Date().toISOString(),observedLegs:evidence.length,totalLegs:legs.length,
-      state:anyBlocked?'SIMULATOR_BLOCKED':allPass?'SIMULATOR_PASSED':'PARTIAL_REHEARSAL',
-      source:'Binance Web3 unsigned build + simulator',
-      summary:evidence.map(x=>x.ticker+': '+(x.receipt?.simulation.reportedStatus||'UNKNOWN')).join(' · ').slice(0,260)});
-    }
-   }
-   if(runAbort.current===controller)runAbort.current=null;runRef.current=false;setRunning(false);
+   if(runAbort.current===controller)runAbort.current=null;
+   runRef.current=false;setRunning(false);
   }
  }
+
  return <div className="desk-wrap desk-internal-page desk-sim-lab">
   <div className="desk-breadcrumb"><Link href="/sentinel">THE BRIEF</Link><span>→</span><Link href="/sentinel/baskets">BASKET STUDIO</Link><span>→</span><Link href="/sentinel/review">EXECUTION REVIEW</Link><span>→</span><b>SIMULATION LAB</b></div>
   <header className="desk-page-head desk-sim-hero">
@@ -382,12 +376,14 @@ export default function ExecutionLab(){
      </div>}
     </section>
     <div className="desk-sim-rails"><div><span>CHAIN</span><strong>BSC / 56</strong></div><div><span>INPUT TOKEN</span><strong>USDT / 18 DECIMALS</strong></div><div><span>MAX PER LEG</span><strong>$25 USDT</strong></div><div><span>MAX BASKET</span><strong>$50 USDT</strong></div><div><span>SLIPPAGE LIMIT</span><strong>0.50%</strong></div><div><span>PRICE IMPACT LIMIT</span><strong>2.00%</strong></div><div><span>SUPPORTED PATH</span><strong>LIQUIDMESH SWAP</strong></div></div>
-    <button type="button" className="desk-sim-run" onClick={()=>void runSimulation()} disabled={running||!!issue}>
+    <button type="button" className="desk-sim-run" onClick={()=>void runSimulation()} disabled={running||!!issue||!canRehearse}>
      {running?<RefreshCw size={17} className="desk-spin"/>:<ShieldAlert size={18}/>}
-     {running?'Running real preflight…':runId>0?'Re-run fresh simulations':'Build & simulate basket'}
+     {running?'Planning & rehearsing actual swaps…':runId>0?'Rehearse all legs with fresh quotes':'Build & simulate basket'}
      <ArrowRight size={17}/>
     </button>
     {issue&&<p className="desk-sim-note" role="status">{issue}</p>}
+    {recoveryError&&<p className="desk-sim-note" role="alert">{recoveryError}</p>}
+    {currentRun&&<p className="desk-sim-note" role="status">Orchestrator: {currentRun.phase.replaceAll('_',' ')} · explicit attempt {currentRun.attempt}/3. {recovery?.reason} Never auto-resubmits a failed leg.</p>}
     {!issue&&<p className="desk-sim-note">Separate quote/build/simulate calls per leg. Nothing signs, approves or broadcasts. A blocked leg halts the batch.</p>}
     <ExecutionAuthorization legs={legs.map(x=>({ticker:x.ticker,platform:x.platform,amountUsd:x.amountUsd}))}
      enabled={!running&&addressOK&&budgetOK&&feed==='live'} operationKey={operationKey}/>
