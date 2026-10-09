@@ -7,6 +7,7 @@ import {useWallet} from '@/components/sentinel/WalletContext';
 import {WalletControls} from '@/components/sentinel/WalletControls';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
 import {formatUsd,tokenUnits} from '@/lib/sentinel/model';
+import {basketEvidenceKey} from '@/lib/sentinel/journey-evidence';
 import {assessPortfolioDrift,markedValueForDisplay,WATCH_REFRESH_MS,type PortfolioObservation,type DriftStatus} from '@/lib/sentinel/portfolio-watch';
 
 type JournalRow={observedAt:string;blockNumber:string;status:DriftStatus;largestDrift:number|null;details:string};
@@ -15,7 +16,7 @@ const date=(value:string)=>new Date(value).toLocaleString('en-US',{month:'short'
 const THRESHOLDS=[2,5,10] as const;
 
 export default function PortfolioWatch(){
- const {basket,snapshot,feed}=useDesk();
+ const {basket,snapshot,feed,recordJourneyProof}=useDesk();
  const wallet=useWallet();
  const [threshold,setThreshold]=useState<number>(5);
  const [observation,setObservation]=useState<PortfolioObservation|null>(null);
@@ -72,6 +73,21 @@ export default function PortfolioWatch(){
      throw Error('The observation did not match this wallet and basket.');
     setObservation(data);setError('');
     const outcome=assessPortfolioDrift(basket,data,threshold,Date.now());
+    if(['EMPTY','WITHIN_BAND','DRIFT_DETECTED','UNPRICED'].includes(outcome.status))
+     recordJourneyProof({
+      kind:'PORTFOLIO',walletAddress:address,basketKey:basketEvidenceKey(basket),
+      recordedAt:data.observedAt,observedLegs:data.legs.filter(x=>x.status==='OBSERVED').length,
+      totalLegs:basket.length,
+      source:'Read-only BSC ERC-20 balanceOf + provider marks',
+      state:outcome.status==='EMPTY'?'PORTFOLIO_EMPTY':
+       outcome.status==='WITHIN_BAND'?'PORTFOLIO_WITHIN_BAND':
+       outcome.status==='DRIFT_DETECTED'?'PORTFOLIO_DRIFT':'PORTFOLIO_UNPRICED',
+      summary:(outcome.status==='EMPTY'?'Observed $0.00 in the selected contracts.':
+       outcome.status==='UNPRICED'?'Some selected balances or fresh token marks are unavailable.':
+       'Observed selected-portfolio value '+formatUsd(outcome.totalValueUsd)+
+       ' · max drift '+(outcome.maxAbsDriftPct?.toFixed(2)??'—')+'%.').slice(0,260)
+     });
+
     const item:JournalRow={observedAt:data.observedAt,blockNumber:data.blockNumber,status:outcome.status,
      largestDrift:outcome.maxAbsDriftPct,details:outcome.reason};
     setJournal(prev=>{

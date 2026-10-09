@@ -1,64 +1,57 @@
 # SynthaBasket Sentinel — Judge Reproduction Guide
 
-**Repository:** https://github.com/ShalyX/synthabasket-sentinel
-**Production:** https://synthabasket-sentinel.vercel.app
-**Guided live demo:** https://synthabasket-sentinel.vercel.app/sentinel/demo
-**NVIDIA dossier:** https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA
-**Track:** BNB Hack: Tokenized Stocks Edition, Main Track
-**Stack:** Next.js 15 / Node.js 22 / BSC mainnet (56) / Binance Web3 signed RWA Data and Trading aggregator quote API.
-**Deadline:** 11 October 2026 at 12:00 UTC.
-**Original Solana STOCKLANA:** separate project at https://github.com/ShalyX/synthabasket.
+**Project:** BSC tokenized-stock basket execution planner with deterministic safeguards and read-only portfolio monitoring.
+**GitHub:** https://github.com/ShalyX/synthabasket-sentinel
+**Production market endpoint:** https://synthabasket-sentinel.vercel.app
+**New six-decision walkthrough:** `/sentinel/demo` on the current PR #1 preview; published stable production only after an explicitly authorized release.
+**Track:** BNB Hack / Tokenized Stocks Edition, Main Track.
+**Deadline:** October 11, 2026, 12:00 UTC.
+**Source:** Next.js 15 / BSC chain ID 56 / Binance Web3 signed RWA market and Trading quotes / Binance Transaction API simulation / ERC-20 public `balanceOf`.
+**Separate Solana project:** https://github.com/ShalyX/synthabasket (not this submission).
 
-## Suggested live journey — 3 minutes
+## The product promise and its verified limits
 
-This is the actual deployed product, not a sample-data presentation. The public app's market feed uses server-side credentials for signed Binance Web3 RWA inventory. No venue quote amount is hardcoded as if live.
+Sentinel is a **basket execution agent**, not only an issuer comparison research desk.
 
-1. **The first 20 seconds:** Open the guided demo route. Check the signed-feed status and live issuer counts. On October 8, the production Singapore endpoint returned **488 issuer contracts / 448 tickers**; inventory can change.
-2. **Inspect two NVIDIA wrappers:** Click **Examine NVIDIA**. The issuer dossier shows bStocks NVDAB and Ondo NVDAon as two different BSC contracts, with independently reported share references and token-to-share ratios.
-3. **Inspect real $10 SWAP indications:** Click **Inspect $10 quote** for the bStocks contract. The user also successfully obtained an Ondo SWAP quote after supplying a **public BSC receiving address**. No wallet connection, secret key or transaction is required. Each issuer's venue, mode, amount, impact and 30-second expiry are displayed only if the actual signed quote request succeeds.
-4. **Normalize exposures:** With a public BSC receiver supplied for the observed Ondo request, use **Inspect both $10 quotes** in **The Wrapper Test**. Sentinel computes quoted token output × token-to-share ratio, then the percentage difference in indicative underlying-share equivalent units for the **same USDT budget**. Stale, mismatched or ratio-invalid quotes cannot become a current comparison.
-5. **Watch expiry:** At eight seconds remaining, the countdown turns amber. At expiry, the live verdict is removed; an earlier valid overlapping quote pair may appear as **REFERENCE ONLY / NOT EXECUTABLE** with a fresh-quote button. It is not a cached executable price.
-6. **Build a basket:** Open Basket Studio and choose **THE COMPUTE STACK** if all legs appear in the current inventory. Adjust the allocations; the total stays exactly 100%. Set a $10–$250 BSC USDT research budget. This proposes allocations locally, not onchain.
-7. **Inspect pretrade safeguards:** Open Execution Review with the basket selected, request current venue indications, and inspect issuer state, ratio-adjusted parity, reported impact and quote freshness. The result is advisory research only; never a signed order.
+**Discover** real bStocks and Ondo issuer contracts → **compare** their ratio-adjusted exposure → **construct** a weighted basket → **quote, build and simulate** each unsigned BSC USDT leg → **request explicit user wallet approval only if release gates can genuinely pass** → **observe** actual issuer token balances and propose indicative rebalance amounts. The product does **not** claim to have purchased any tokens through this app. Live transaction release remains **HARD LOCKED** because router nested calldata/source and per-user issuer eligibility are unverified.
 
-## Optional local Agentic Wallet evidence
+The working issuer data layer is real. Earlier authenticated read-only Binance calls returned 488 BSC contracts across 448 ticker symbols and both NVIDIA wrapper types. Production browser quotes are short-lived and may become unavailable. The preview explicitly marks when it relays first-party production inventory; it does not have production-scoped Binance quote/build/simulation credentials.
 
-The owner paired the official Binance Agentic Wallet CLI on a separate authorized Windows device and **successfully executed a read-only quote** for 10 BSC USDT to NVDAB. The local sanitizer emitted a small observation JSON that the owner could import in Sentinel. This is real **owner-operated local quote evidence** but **not an autonomous agent, wallet attestation, transaction, or wallet integration into the public cloud service**. A simultaneous fresh difference against the hosted venue was **not** independently confirmed. See AGENTIC_QUOTE_HANDOFF.md.
+## Judge journey — follow the user, not just the API
 
-## Local reproduction
+1. **Open the new `/sentinel/demo` (PR preview).** Read the central question and the independent state of market inventory, basket, connected BSC account and final execution release. “NO GO” is a security result, not a stubbed success.
+2. **Issuer dossier `/sentinel/markets/NVDA`.** Find two distinct verified BSC issuer token records (NVDAB and NVDAon), actual token-to-share ratios and reference marks. A token mark is NOT a quote, nor an entitlement to underlying securities.
+3. **Basket Studio `/sentinel/baskets`.** From the Guide you may click “Set NVDA + AMD research basket,” which selects real issuer records and an initial 50/50 local thesis. Adjust weights and issuers; the total remains 100%. A basket target does not issue shares, claim holdings, or spend funds.
+4. **Execution Review `/sentinel/review`.** With authorized provider access, request fresh real venue quotes and inspect venue, basis, impact and expiry. An unavailable quote is an honest unavailable state. Do not claim it was a purchase.
+5. **Simulation Lab `/sentinel/execute`.** Connect an injected BSC wallet (chain 56). Select a bounded test size ($1–$25 per leg, at most $50 total), initiate quote→build→simulate per leg. On a properly authenticated authorized environment, the real Binance Transaction API can report PASS or BLOCKED. A previously tested route was BLOCKED by insufficient BSC USDT; no transaction was signed. **The public PR preview does not hold quote API credentials and cannot be relied on for signed simulation**.
+6. **Execution Decision Record** on the simulation screen makes distinct determinations: market, intent, sender, route/simulation, funding/allowances, issuer entitlement, two-layer proxy/ABI semantics, and final release. The last three remain UNVERIFIED/LOCKED regardless of any green simulator status. No approval, swap or wallet signature is initiated.
+7. **Portfolio Watch `/sentinel/watch`.** Read your actual selected issuer balances pinned to one BSC block, compare marked allocation with targets if nonempty, and get indicative drift changes only. A real zero position, as observed for a selected Ondo ABNB issuer token, displays $0.00 and **NO OBSERVED POSITIONS** instead of a fabricated rebalance. If a mark or balance is missing, the valuation remains unknown.
+8. **Return to Guide.** The session-only journal records actual returned simulator and BSC balance responses for the SAME connected wallet, selected issuer mix and allocation. No replays of expired executable quotes, fictitious fills, fabricated wallet balances, or seeded trade receipts.
 
-The public deployed site needs no judge-supplied developer API key. If reproducing the local source:
+## Signed authentication and route evidence (dated, not tradable quotes)
 
-    git clone https://github.com/ShalyX/synthabasket-sentinel.git
-    cd synthabasket-sentinel
-    npm ci --legacy-peer-deps
-    npm run dev
+October 9 read-only authenticated Binance LiquidMesh build for 1 BSC USDT to NVDAB produced **4,964 bytes of unsigned calldata** with outer swap selector `0xad43f73d`. Binance outer proxy/spender `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5` is NOT the separately published inner LiquidMesh EVM router `0x3d90f66b534dd8482b181e24655a9e8265316be9`. Independently verified Sourcify source applies only to the inner TransparentUpgradeableProxy; implementation source and nested **4,580 bytes** remain unknown. The outer proxy exposes upgrade controls and an EOA owner. Binance bStocks requires legally permitted individual and wallet eligibility, not just a geographically eligible server; that integration isn't verified.
 
-Open http://localhost:3000/sentinel/demo. Supply **your own legally permitted Binance Web3 developer credentials** as OC_API_KEY and OC_SECRET_KEY in gitignored .env.local for live signed API calls; never commit or display them. The runtime is pinned to Singapore sin1 on production, which demonstrates region deployment and past API access, **not jurisdictional approval**.
+Reproducible investigation: `docs/sentinel/LIQUIDMESH_AUTHENTICATED_ROUTE_2026-10-09.md`, `LIQUIDMESH_OFFICIAL_ROUTER_ELIGIBILITY_2026-10-09.md`, and `LIQUIDMESH_SEMANTICS_ELIGIBILITY_2026-10-09.md`. Raw audit fixture stays privately stored outside git and was never broadcast.
 
-Validate the source with:
+## Verification and privacy
 
-    npx tsx --test src/lib/sentinel/*.test.ts
-    node --test scripts/agentic-wallet-readonly.test.mjs scripts/agentic-wallet-diagnostic.test.mjs scripts/agentic-wallet-quote-handoff.test.mjs scripts/deployment-region.test.mjs
-    npx tsc --noEmit
-    npm run build
+```sh
+npm ci --legacy-peer-deps
+npx tsx --test src/lib/sentinel/*.test.ts
+npx tsc --noEmit
+npm run build
+```
 
-CI: https://github.com/ShalyX/synthabasket-sentinel/actions/workflows/sentinel-ci.yml
+No API secrets or signing handles shipped to the browser or PR preview. A public connected wallet is not an issuer KYC attestation. No autonomous Agent Studio identity, x402 onchain actor, self-custodied model signer or unattended portfolio trading is claimed. Session audit evidence is in memory only and resets on reload.
 
-## Honesty / scope boundaries
+**Demo video:** preparation in [DEMO_CAPTURE_PLAN.md](DEMO_CAPTURE_PLAN.md). No completed/hosted MP4 URL until a real capture and final review. Avoid editing stale price numbers to look current.
 
-- **No swaps or purchases have been executed in this product.** It does not broadcast trades, sign wallet transactions, handle token approvals, issue onchain basket shares, or establish stock ownership. No invented receipt or fill is shown.
-- **No autonomous Agent Studio integration.** There is no persistent x402-funded agent, deployed agent identity or permissioned autonomous order flow.
-- **Not a best-execution guarantee.** Different issuer ratios, prices, fees and conditions mean raw token quantity alone is not comparable. Results expire and are solely informational.
-- **No guaranteed access.** Binance regional, account and issuer constraints still apply. Hosted API calls may fail; Sentinel displays an explicit unavailable state rather than simulated quotes.
-- **Main-track uncertainty:** Organizer guidance includes transaction simulation and demonstration with small live BSC amounts. Sentinel demonstrates real read-only integration but not that execution proof; judges must assess it accordingly.
+## Official organizer submission
 
-## Submission
+- Hackathon details: https://www.bnbchain.org/en/hackathons/tokenized-stocks
+- Project form: https://forms.gle/yToDUzaDMwWnq6R6A
+- Developer Experience Report: https://forms.gle/EUQ39xf54GHjC2ys5
+- **Developer Experience Report must be personally authored** by the developer; AI-written report entries do not meet the organizer requirement.
 
-Official event: https://www.bnbchain.org/en/hackathons/tokenized-stocks
-Submission form: https://forms.gle/yToDUzaDMwWnq6R6A
-Developer Experience Report form: https://forms.gle/EUQ39xf54GHjC2ys5
-
-A **personally written** and technically specific Developer Experience Report is mandatory and worth 25% of the total score. AI-generated DevEx reports are not accepted. A public repo and accessible deployment are required; a video **no longer than four minutes** is strongly recommended. See SUBMISSION.md and DEVEX_EVIDENCE_WORKSHEET.md.
-
-**Not submitted until the owner completes both forms and retains actual submission confirmations.**
+No submission should be described as completed until both form confirmations are received and recorded. The confirmed demo must truthfully acknowledge the lack of an actual onchain stock purchase.

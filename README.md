@@ -1,6 +1,6 @@
 # SynthaBasket Sentinel
 
-**Tokenized-stock research and pre-execution intelligence for BNB Smart Chain.**
+**A BNB Chain tokenized-stock basket execution agent: real issuer discovery → weighted portfolio → unsigned transaction simulation → explicit release checks → onchain portfolio observation. Live spending is hard-locked until issuer and router verification.**
 
 [Guided Demo — start here](https://synthabasket-sentinel.vercel.app/sentinel/demo) · [Sentinel live app](https://synthabasket-sentinel.vercel.app/sentinel) · [NVDA issuer comparison](https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA) · [Source/runbook](docs/sentinel/JUDGE_RUNBOOK.md)
 
@@ -28,7 +28,9 @@ Sentinel separates the research process into distinct areas:
 
 **Follow-up semantics and issuer-eligibility verification (October 9):** Two BSC RPCs independently confirmed the current LiquidMesh router/facet and EOA owner, and Sentinel now structurally checks the privately captured 4,580-byte nested LiquidMesh envelope. **Full nested call semantics are NOT source-verified, and no authoritative bStocks user-country/issuer eligibility proof is available. Trading stays disabled.** [Read the execution-gate verification](docs/sentinel/LIQUIDMESH_SEMANTICS_ELIGIBILITY_2026-10-09.md).
 
-**Audit verdict (October 9, 2026): NO GO for real funds.** The actual NVDAB issuer BeaconProxy and beacon implementation were inspected on BSC, but the live LiquidMesh router, spender and calldata could not be independently decoded from the production-only Binance API keys. M4 now contains a **hard ABI semantic deny** that blocks all signing even if an operator enables its environment flag. [Read the reproducible audit findings](docs/sentinel/LIQUIDMESH_AUDIT_2026-10-09.md).
+**Audit verdict (October 9, 2026): NO GO for real funds.** An authenticated live Binance LiquidMesh quote/build was captured and its **outer** calldata envelope validated, but the nested 4,580-byte instructions and current swap implementations were not independently verified. User/issuer eligibility remains unknown. M4 now contains a **hard ABI semantic deny** that blocks all signing even if an operator enables its environment flag. [Read the reproducible audit findings](docs/sentinel/LIQUIDMESH_AUDIT_2026-10-09.md).
+
+**M8 interactive end-to-end demo (October 9):** The current PR branch adds a six-decision execution walkthrough, a separately statused Decision Record in Simulation Lab, and session-only provenance for real simulator/BSC balance observations. The judge capture guide now covers the whole product rather than just wrapper comparisons. [Full runbook](docs/sentinel/JUDGE_RUNBOOK.md) · [Video capture plan](docs/sentinel/DEMO_CAPTURE_PLAN.md). **No complete demo MP4 or public video URL has been produced yet.**
 
 **Live execution is still locked in deployed production:** The M4 branch adds explicit wallet-owned transaction requests behind a separate default-OFF operator switch, with no custody, automated trading or silent signatures. Nothing can sign merely from an imported CLI diagnostic or simulator status. This authorization path has NOT been production-enabled or proven by a mined swap receipt.
 

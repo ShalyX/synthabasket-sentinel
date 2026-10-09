@@ -8,6 +8,7 @@ import {ArrowLeft,ArrowRight,CheckCircle2,Clock3,LockKeyhole,RefreshCw,ShieldAle
 import {useDesk} from '@/components/sentinel/DeskContext';
 import {Eyebrow,TokenMark,BlankState} from '@/components/sentinel/DeskBits';
 import {amountFor} from '@/lib/sentinel/basket';
+import {basketEvidenceKey} from '@/lib/sentinel/journey-evidence';
 import {formatUsd} from '@/lib/sentinel/model';
 import {preflightHeadline,requiresFundingReadout} from '@/lib/sentinel/preflight-presentation';
 import {
@@ -77,7 +78,7 @@ const fmt=(n:number|null,d=8)=>n==null?'—':n.toLocaleString('en-US',{maximumFr
 const expiry=(raw:string)=>new Date(raw).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
 export default function ExecutionLab(){
- const {basket,snapshot,feed,error,refresh}=useDesk();
+ const {basket,snapshot,feed,error,refresh,recordJourneyProof}=useDesk();
  const wallet=useWallet();
  // Simulation-only spend: intentionally independent of the investor's larger Basket Studio budget.
  const [budget,setBudget]=useState(25);
@@ -211,7 +212,21 @@ export default function ExecutionLab(){
      setObservations([...history]);break;
     }
    }
-  }finally{if(runAbort.current===controller)runAbort.current=null;runRef.current=false;setRunning(false);}
+  }finally{
+   if(!controller.signal.aborted&&currentOperation.current===key){
+    const evidence=history.filter(x=>!!x.receipt);
+    if(evidence.length){
+     const anyBlocked=evidence.some(x=>x.status==='blocked');
+     const allPass=evidence.length===legs.length&&history.every(x=>x.status==='pass');
+     recordJourneyProof({kind:'SIMULATION',walletAddress:receiver.trim(),basketKey:basketEvidenceKey(basket),
+      recordedAt:new Date().toISOString(),observedLegs:evidence.length,totalLegs:legs.length,
+      state:anyBlocked?'SIMULATOR_BLOCKED':allPass?'SIMULATOR_PASSED':'PARTIAL_REHEARSAL',
+      source:'Binance Web3 unsigned build + simulator',
+      summary:evidence.map(x=>x.ticker+': '+(x.receipt?.simulation.reportedStatus||'UNKNOWN')).join(' · ').slice(0,260)});
+    }
+   }
+   if(runAbort.current===controller)runAbort.current=null;runRef.current=false;setRunning(false);
+  }
  }
  return <div className="desk-wrap desk-internal-page desk-sim-lab">
   <div className="desk-breadcrumb"><Link href="/sentinel">THE BRIEF</Link><span>→</span><Link href="/sentinel/baskets">BASKET STUDIO</Link><span>→</span><Link href="/sentinel/review">EXECUTION REVIEW</Link><span>→</span><b>SIMULATION LAB</b></div>
@@ -271,6 +286,22 @@ export default function ExecutionLab(){
        'The official simulation endpoint receives genuine unsigned BSC transaction calldata only when you initiate this read-only test.'}</p>
      </div>
     </div>
+    <section className="desk-execution-decision" aria-label="Execution decision record">
+     <div className="desk-execution-decision-head"><span>THE AGENT'S DECISION RECORD</span><b>PLANNING IS NOT SPENDING</b></div>
+     <p>Sentinel works through the evidence in order. A passed check cannot override a later failure or missing permission.</p>
+     {([
+      ['01 / INVENTORY',feed==='live'?'OBSERVED':'UNAVAILABLE','Issuer inventory is not permission to trade.'],
+      ['02 / ALLOCATION',budgetOK?'BOUNDED':'NOT READY',budgetOK?legs.length+' issuer legs · '+formatUsd(total)+' simulation-only.':'Select a valid basket and bounded simulation size.'],
+      ['03 / WALLET SESSION',addressOK?'CONNECTED BSC':'NOT READY',addressOK?'Connected sender on chain 56; no signing requested.':'Connect the intended BSC wallet to simulate.'],
+      ['04 / ROUTE & SIMULATOR',complete?'PREDICTED PASS':blocked?'BLOCKED':expired?'EXPIRED':'NOT VERIFIED',blocked?scopedObservations.find(x=>x.status==='blocked')?.reason||'The simulator rejected a leg.':complete?'All legs returned predicted success, but no onchain execution occurred.':'Trigger quote, unsigned build and simulation on each leg.'],
+      ['05 / FUNDS & ALLOWANCES',!currentBalanceCheck?'NOT VERIFIED':currentBalanceCheck.usdtCoversAmount&&currentBalanceCheck.bnbCoversBufferedSwapEstimate===true?'OBSERVED SUFFICIENT':'NOT CLEARED',!currentBalanceCheck?'No onchain funding diagnostic has been completed.':currentBalanceCheck.usdtCoversAmount?'Observed public balances are not approval or eligibility.':'USDT is below the proposed basket amount.'],
+      ['06 / ISSUER ELIGIBILITY','UNVERIFIED','No authoritative end-user, product, jurisdiction and wallet trading clearance.'],
+      ['07 / SWAP IMPLEMENTATION','UNVERIFIED','Nested LiquidMesh calldata and upgrade authorization remain unaudited.'],
+      ['08 / FINAL RELEASE','LOCKED','No wallet approvals, live swaps, filled orders or receipts may be claimed.']
+     ] as const).map(check=><div className="desk-execution-check" key={check[0]}>
+      <span>{check[0]}</span><div><b>{check[1]}</b><small>{check[2]}</small></div>
+     </div>)}
+    </section>
    </section>
    <aside className="desk-sim-rail">
     <div className="desk-sim-rail-head"><span>02 / WALLET-BOUND PREFLIGHT</span><h2>Connect once.<br/><em>Simulate the right account.</em></h2><p>The connected BSC account is the sole sender for quotes, transaction builds, and simulation. Switch accounts or networks and the old results are invalidated automatically.</p></div>
@@ -360,7 +391,7 @@ export default function ExecutionLab(){
     {!issue&&<p className="desk-sim-note">Separate quote/build/simulate calls per leg. Nothing signs, approves or broadcasts. A blocked leg halts the batch.</p>}
     <ExecutionAuthorization legs={legs.map(x=>({ticker:x.ticker,platform:x.platform,amountUsd:x.amountUsd}))}
      enabled={!running&&addressOK&&budgetOK&&feed==='live'} operationKey={operationKey}/>
-    <div className="desk-sim-security"><LockKeyhole size={20}/><div><b>Actual spending is gated.</b><p>Simulations do not prove you hold the tokens, that allowances exist, or that the issuer permits you to trade. Distinct wallet-owned approval and spend confirmations are now gated by live operator allowlists; no funds can move without the user's wallet signature. A passing simulation does not give the app authority to move funds.</p></div></div>
+    <div className="desk-sim-security"><LockKeyhole size={20}/><div><b>Actual spending is gated.</b><p>Simulations do not prove you hold the tokens, that allowances exist, or that the issuer permits you to trade. Mainnet spending remains hard-blocked until the nested router ABI and issuer-specific end-user eligibility are independently verified. A passing simulation, funded wallet, or configured allowlist cannot bypass either blocker.</p></div></div>
     <Link href="/sentinel/review" className="desk-sim-back"><ArrowLeft size={14}/> Return to quote review</Link>
    </aside>
   </div>

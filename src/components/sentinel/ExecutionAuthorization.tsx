@@ -14,6 +14,7 @@ type Reviewed={
 };
 type Submitted={hash:string;target:string;sender:string;type:'approval'|'swap';status:string;block?:string; ticker:string;platform:'bstock'|'ondo'};
 type Settlement={status:string;confirmations?:string;stateBalances?:{status:string;usdtNetDecrease?:string;issuerNetIncrease?:string};transferLogs?:{usdtSentRaw:string;issuerReceivedRaw:string}};
+const MAINNET_RELEASE_UNVERIFIED=true; // UI invariant; independent server checks deny live spend.
 export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];enabled:boolean;operationKey:string}){
  const wallet=useWallet();
  const [index,setIndex]=useState(0);
@@ -32,10 +33,10 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
  const scoped=review&&leg&&wallet.address&&wallet.ready&&review.sender.toLowerCase()===wallet.address.toLowerCase()&&
   review.ticker===leg.ticker&&review.issuer===leg.platform&&review.amountUsd===leg.amountUsd?review:null;
  const live=!!scoped&&Date.parse(scoped.expiresAt)>now+2000;
- const signable=enabled&&!busy&&!!scoped&&live&&ack&&!submitted&&
+ const signable=!MAINNET_RELEASE_UNVERIFIED&&enabled&&!busy&&!!scoped&&live&&ack&&!submitted&&
   (scoped.phase==='APPROVAL_REQUIRED'&&!!scoped.approval||scoped.phase==='SWAP_READY'&&!!scoped.swap);
  async function prepare(){
-  if(!enabled||!leg||busy)return;
+  if(MAINNET_RELEASE_UNVERIFIED||!enabled||!leg||busy)return;
   const key=operationKey,controller=new AbortController();
   abort.current?.abort();abort.current=controller;
   setBusy(true);setErr(null);setReview(null);setAck(false);setSubmitted(null);setSettlement(null);
@@ -96,8 +97,8 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
     {legs.map((x,i)=><option key={x.ticker+':'+x.platform} value={i}>{x.ticker} · {x.platform==='bstock'?'bStocks':'Ondo'} · ${x.amountUsd.toFixed(2)} USDT</option>)}
    </select>
   </label>
-  <button type="button" className="desk-auth-button" disabled={!enabled||busy||!leg} onClick={()=>void prepare()}>
-   {busy?<RefreshCw size={17}/>:<LockKeyhole size={17}/>} Review fresh wallet action <ArrowRight size={16}/>
+  <button type="button" className="desk-auth-button" disabled={MAINNET_RELEASE_UNVERIFIED||!enabled||busy||!leg} onClick={()=>void prepare()}>
+   {busy?<RefreshCw size={17}/>:<LockKeyhole size={17}/>} Trading permission unverified — review locked <ArrowRight size={16}/>
   </button>
   {!enabled&&<p className="desk-auth-warning">Connect on BSC, select a valid basket and stop any active simulation before reviewing a live action.</p>}
   {scoped&&<div className="desk-auth-review">

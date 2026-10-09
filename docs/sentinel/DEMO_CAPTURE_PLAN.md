@@ -1,45 +1,43 @@
-# Sentinel — Video Demo Capture Plan (target 3:10, hard cap 4:00)
+# Sentinel — One coherent BSC basket execution demo (target 3:35; maximum 4:00)
 
-**Status:** Shot plan only. NO video recorded, edited, exported or publicly hosted yet.
-**Purpose:** Judges should understand the product's central insight within **20 seconds**, then see actual, non-simulated proof within the next minute.
-**Format:** 16:9 desktop browser recording, no sensitive wallet credentials, 1080p preferred if stable.
-**Audio:** A clear natural human explanation or polished captions with room tone; no harsh generated sound, loud music, or fake transaction effects.
-**Source:** https://synthabasket-sentinel.vercel.app/sentinel/demo
+**Status (October 9, 2026):** interactive six-decision Guided Demo implemented; recording/export **NOT yet completed**. This document is a practical, reproducible capture and truthful claims contract, not a substitute for an actual MP4 or public video URL.
 
-## Sequence (editable time budget)
+**Product job:** demonstrate the agent loop **discover → issuer comparison → weighted basket → quote/build/simulate → explicit transaction RELEASE DENIED → real wallet holdings/drift**. Do not repeat the former three-move wrapper-only research-desk demo.
 
-| Time | Page / shot | What the actual screen should show | Editorial job |
-|---|---|---|---|
-| 00:00–00:15 | Guided Demo hero | Two NVIDIA issuer records, actual market-source status | Hook: one stock, different contracts, different wrapper economics |
-| 00:15–00:35 | NVIDIA dossier | bStocks NVDAB vs Ondo NVDAon, ratios and reference price | Establish real contracts, not fictional tickers |
-| 00:35–01:15 | Quote controls + Wrapper Test | Explicit user-initiated $10 USDT requests on BOTH issuers | Prove independently priced live quotes; show normalized exposure and the percentage |
-| 01:15–01:32 | Countdown | Closing-soon amber state, then unmistakable expired reference and one-click refresh | Show freshness honesty instead of a frozen arbitrage headline |
-| 01:32–02:08 | Basket Studio | THE COMPUTE STACK, weight sliders, issuer selection, budget | Put real issuer exposures into a research portfolio; weights 100% |
-| 02:08–02:43 | Execution Review | Run pretrade research quotes, show policy fields, no signing/approval | Explain risk guard and that it does not execute a trade |
-| 02:43–03:00 | Optional dossier Agentic quote handoff | The local-only sanitizer and file import if a sanitized non-expired artifact is available | Show real owner-operated read-only wallet tooling, never autonomous wallet claims |
-| 03:00–03:10 | Return to Guided Demo footer | Clear final statement: useful comparison before spending | Leave memorable thesis; source and working links stay visible |
+**Public production market and venue:** https://synthabasket-sentinel.vercel.app — production-only Binance credentials; old main deployment does not yet have M8 walkthrough until explicitly merged. **M8 review preview:** the preview from PR #1 includes new end-to-end walkthrough, decision ledger, Portfolio Watch, and a read-only relay of production inventory. The preview has **no Binance quote/build/simulate credentials**, so it cannot honestly show live signed execution simulations. Reproduce a live quote/sim separately on a legally permitted, properly authenticated environment, or state NO CURRENT SIM EVIDENCE.
 
-The wrapper pair expires **30 seconds after its earliest quote**. Record the compare scene as a single short shot when both current quotes are displayed, or stage the countdown scene separately using new user-initiated genuine quotes. Re-record rather than substituting fixture data or editing old numbers into the UI.
+## Capture structure — 3:35 target
 
-## Capture hygiene
+| Time | Real route / scene | Required evidence and on-screen truth |
+|---|---|---|
+| 00:00–00:18 | `/sentinel/demo` new hero | "A basket is a plan. Can it execute?" Inventory status is dynamically derived. Execution "NO GO" is visible |
+| 00:18–00:45 | `/sentinel/markets/NVDA` | Two distinct live bStocks/Ondo BSC contracts and token/share conversion ratios. Say *issuer inventory*, not filled order |
+| 00:45–01:15 | `/sentinel/baskets` | Choose NVDA+AMD or another currently supported issuer basket. Adjust allocation and show exactly 100% weighted target; no shares issued |
+| 01:15–01:47 | `/sentinel/review` | Initiate real read-only quote requests if authenticated, otherwise show explicit unavailability. User-controlled receiver address may be needed for Ondo. Don't splice earlier quotes into a live screen |
+| 01:47–02:35 | `/sentinel/execute` | Show connected BSC wallet, bounded USDT input, **actual** quote→build→Transaction API simulate result if environment permits. Blocked due USDT balance is a successful guardrail demonstration, not a purchase. If preview denies requests, say preview lacks signing credentials and display the UNAVAILABLE state |
+| 02:35–03:00 | **Execution Decision Record** under simulation | Point to each independent gate. Source, weight, wallet, simulator and funds may be observed; issuer entitlement and nested router semantics explicitly **UNVERIFIED**, and final **LOCKED** |
+| 03:00–03:23 | `/sentinel/watch` with connected BSC wallet | Read actual ERC-20 `balanceOf` at a BSC block, show empty ABNBon position if that's what the wallet really holds; **do not edit zero into positive balances**. A target is not a purchase |
+| 03:23–03:35 | Return `/sentinel/demo` historical session evidence | In-memory session proof appears only for real simulator or balance API responses from the same wallet and basket. End on **no filled trade claimed** |
 
-- Use a fresh browser session without unrelated extensions, bookmarks containing private data, or personal notifications.
-- Hide / blur your **public receiving address** in the capture if you do not want to share it. NEVER show seed phrases, API keys, local wallet sessions, private keys, signed auth headers or browser developer token data.
-- Capture a real working HTTP API-backed result; never use synthetic fixtures used by automated browser QA.
-- Do not record host VPN/proxy settings as an implied eligibility bypass.
-- Capture actual route mode. Both observed NVIDIA routes were **SWAP / LiquidMesh**, not RFQ.
-- The Agentic Wallet CLI quote was genuinely observed locally, but CLI-to-hosted fresh divergence was NOT verified; optional segment can explain the sanitized local handoff without manufacturing that missing result.
-- Include small on-screen caption labels: **LIVE INVENTORY**, **READ-ONLY VENUE QUOTE**, **INDICATIVE NORMALIZATION**, **NO TRADE EXECUTED**. Do not overlay fake API responses or market marks.
-- Get two screenshots as reusable evidence: one NVIDIA issuer pair with token-to-share ratios, one Wrapper Test live or expired state (with timestamps / quote state visible). Screenshots are evidence only, not substitutes for a working live demo.
+## Caption-ready truthful narration
 
-## Final export acceptance
+- "Two contracts can track one stock. The token amount alone doesn't tell you equivalent underlying exposure."
+- "I choose the issuer and weight of each leg. This is a target portfolio, not yet a token position."
+- "The agent asks for a real route, builds unsigned calldata, and asks the simulator what would happen. A blocked outcome is useful evidence."
+- "A prediction of success still isn't permission to trade. The router's full nested semantics and this user's issuer eligibility aren't verified, so the system refuses live execution."
+- "Finally it reads real wallet balances. A zero balance is a zero position—not a pretend rebalance opportunity."
+- "This is the honest current boundary: live research, verifiable preflight, actual wallet observation, and hard-denied execution. No stock tokens purchased through Sentinel."
 
-- [ ] Duration **≤ 04:00**.
-- [ ] All spoken/caption claims checked against live deployment and JUDGE_RUNBOOK.md.
-- [ ] No public/private sensitive fields are accidentally exposed.
-- [ ] Quote modes and comparisons are presented as **indications**, not fills or ownership.
-- [ ] The video opens and plays without login from an incognito browser.
-- [ ] The video has a real shareable URL and that URL is added to SUBMISSION.md.
-- [ ] You personally reviewed the final cut.
+## Recording and evidence acceptance
 
-**Submission form:** https://forms.gle/yToDUzaDMwWnq6R6A
+- Full 16:9 screen recording at 1080p when possible; actual UI and native transitions. No fake toast, fabricated success modal, staged tx hash, pseudo-wallet screenshot, QR keys or synthetic portfolio chart.
+- Captions over native product UI; soft/no soundtrack, natural speech if recorded. Prior excessive audio is explicitly **not** to be reused.
+- Keep actual quote expiry visible; if expired or failing, call that out. Historical observed LiquidMesh route in `LIQUIDMESH_AUTHENTICATED_ROUTE_2026-10-09.md` is a **dated authenticated unsigned build**, not current tradable liquidity or a mined transaction.
+- Wallet address is public but may be blurred; no seed phrase, developer API key, authenticated headers, Vercel secrets, private account identifiers or location/KYC screenshots.
+- Use legal regional access; a Singapore server successfully quoting is NOT the owner's personal issuer eligibility.
+- If the live simulator fails because USDT/BNB is absent, show the failure and its onchain public-wallet diagnostic without framing it as a fault or completed swap.
+- Evidence journal is in-memory; refreshing the browser resets it, and a different connected wallet or basket invalidates it. Film within one session if showing the proof row.
+- Final export must have duration at most 4:00, be accessible without sign-in, play fully, and include a verified stable public URL added to `SUBMISSION.md`. No URL exists yet; do not invent one.
+- Report form is human-authored only; an AI-generated developer-experience report is ineligible per organizer guidance.
+
+**Operator checklist:** [ ] Guided route loads [ ] inventory observed [ ] exact issuers selected [ ] real venue quote or explicit unavailable [ ] simulator result or explicit unavailable [ ] final execution release locked [ ] real wallet balance [ ] complete final cut [ ] privacy review [ ] video URL working [ ] submission receipt.
