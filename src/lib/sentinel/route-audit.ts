@@ -10,8 +10,69 @@ export interface BoundSwapFacts{
  inputToken:string;outputToken:string;sender:string;recipient:string;
  inputAmountRaw:string;minOutputRaw:string;deadline:number|null;
 }
-export function verifyKnownRouterSemantics(_tx:CheckedEvmTransaction,_expected:BoundSwapFacts):Validation<true>{
- return {ok:false,message:'No independently decoded and audited LiquidMesh BSC router ABI is installed. Live swap and token approval are locked.'};
+export const OBSERVED_BSC_LIQUIDMESH_ROUTER='0xb44446b0c8e56988c34f7ff73ae904982b5fdda5';
+export const OBSERVED_BSC_SWAP_SELECTOR='0xad43f73d';
+/** This is an observed ABI-shaped envelope, NOT a verified contract ABI. */
+export interface StructuralSwapEvidence{
+ selector:string;inputToken:string;outputToken:string;inputAmountRaw:string;
+ minimumOutputRaw:string;quotedOutputRaw:string;opaquePayloadBytes:number;
+ feeOrControlAddress:string;otherControlAddress:string;
+ recipientProven:false;opaqueCallsVerified:false;permissionToSpend:false;
+}
+const decimal=(x:string)=>/^(0|[1-9][0-9]{0,77})$/.test(x);
+const wordAddress=(w:string)=>/^0{24}[0-9a-f]{40}$/.test(w)?'0x'+w.slice(24):null;
+/**
+ * Enforces the ABI-shaped, 10-word envelope observed on the authenticated
+ * 2026-10-09 Binance LiquidMesh route. We cannot call these observed offsets
+ * an ABI certification or assume the nested 4,580-byte payload is safe.
+ */
+export function inspectObservedLiquidMeshCalldata(
+ tx:CheckedEvmTransaction,expected:BoundSwapFacts
+):Validation<StructuralSwapEvidence>{
+ if(!validAddress(tx.to)||tx.to.toLowerCase()!==OBSERVED_BSC_LIQUIDMESH_ROUTER)
+  return {ok:false,message:'Swap targets an unreviewed router address.'};
+ if(!validAddress(tx.from)||tx.from.toLowerCase()!==expected.sender.toLowerCase()||tx.value!=='0')
+  return {ok:false,message:'Swap sender or native spend is unexpected.'};
+ const data=tx.data.toLowerCase();
+ if(!/^0x[0-9a-f]+$/.test(data)||data.slice(0,10)!==OBSERVED_BSC_SWAP_SELECTOR||
+   (data.length-10)%64!==0||data.length>40002)
+  return {ok:false,message:'Invalid LiquidMesh selector or ABI alignment.'};
+ const content=data.slice(10);
+ if(content.length<64*11)return {ok:false,message:'LiquidMesh envelope is truncated.'};
+ const words=Array.from({length:10},(_,i)=>content.slice(i*64,(i+1)*64));
+ const inToken=wordAddress(words[3]),outToken=wordAddress(words[5]);
+ if(inToken?.toLowerCase()!==expected.inputToken.toLowerCase()||
+    outToken?.toLowerCase()!==expected.outputToken.toLowerCase())
+  return {ok:false,message:'Swap input/output token bytes differ from the intent.'};
+ if(!decimal(expected.inputAmountRaw)||!decimal(expected.minOutputRaw))
+  return {ok:false,message:'Expected amounts must be canonical decimal integers.'};
+ const amount=BigInt('0x'+words[4]),minOutput=BigInt('0x'+words[6]);
+ const quoted=BigInt('0x'+words[8]);
+ if(amount!==BigInt(expected.inputAmountRaw)||minOutput!==BigInt(expected.minOutputRaw)||
+    !minOutput||quoted<minOutput)
+  return {ok:false,message:'Swap input or minimum output amount changed inside calldata.'};
+ if(BigInt('0x'+words[9])!==320n)
+  return {ok:false,message:'Unexpected dynamic payload offset.'};
+ const byteLength=BigInt('0x'+content.slice(640,704));
+ if(byteLength===0n||byteLength>15000n)return {ok:false,message:'Opaque routing payload length is invalid.'};
+ const dataStart=704;
+ const padded=Number((byteLength+31n)/32n)*64;
+ if(content.length!==dataStart+padded)
+  return {ok:false,message:'Calldata length does not match its declared opaque payload.'};
+ const controlA=wordAddress(words[2]),controlB=wordAddress(words[7]);
+ if(!controlA||!controlB)return {ok:false,message:'Envelope contains malformed control addresses.'};
+ return {ok:true,value:{
+  selector:OBSERVED_BSC_SWAP_SELECTOR,inputToken:inToken,outputToken:outToken,
+  inputAmountRaw:amount.toString(),minimumOutputRaw:minOutput.toString(),
+  quotedOutputRaw:quoted.toString(),opaquePayloadBytes:Number(byteLength),
+  feeOrControlAddress:controlA,otherControlAddress:controlB,
+  recipientProven:false,opaqueCallsVerified:false,permissionToSpend:false
+ }};
+}
+export function verifyKnownRouterSemantics(tx:CheckedEvmTransaction,expected:BoundSwapFacts):Validation<true>{
+ const envelope=inspectObservedLiquidMeshCalldata(tx,expected);
+ if(!envelope.ok)return envelope;
+ return {ok:false,message:'Observed LiquidMesh envelope matches, but recipient, delegated facet controls and nested routing targets lack verified ABI/source. Live approvals and swap signing remain locked.'};
 }
 
 export function inspectBuildMinimum(

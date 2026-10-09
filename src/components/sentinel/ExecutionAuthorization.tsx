@@ -132,6 +132,6 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
    </div>
   </div>}
   {err&&<p className="desk-auth-error" role="alert">{err}</p>}
-  <p className="desk-auth-footnote">Execution is disabled until the operator explicitly enables live spending and independently verifies router, spender and swap-function selector. No auto-approval, infinite allowance, custody or unattended signatures. Onchain trade receipts and position accounting remain separate evidence.</p>
+  <p className="desk-auth-footnote">Live spending is locked: the LiquidMesh nested swap calls and upgrade authority have not been verified from trusted source, and no verified issuer eligibility response exists for this user, product, jurisdiction and wallet. A recognized market quote is NOT entitlement to trade. No unattended signatures or unlimited approvals.</p>
  </section>;
 }

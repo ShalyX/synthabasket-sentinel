@@ -29,3 +29,35 @@ test('receipt Transfer proof requires exact contract, indexed owner and anchored
  if(notReceived.ok)assert.equal(notReceived.value.receivedRaw,'0');
  assert.equal(verifyReceiptTransferLog({tokenContract:token,account:wallet,blockHash:'invalid',logs:[valid]}).ok,false);
 });
+
+test('observed 10-word LiquidMesh envelope can match amounts but never authorize an opaque route',async()=>{
+ const {inspectObservedLiquidMeshCalldata,OBSERVED_BSC_LIQUIDMESH_ROUTER}=await import('./route-audit');
+ const w=(x:bigint)=>x.toString(16).padStart(64,'0');
+ const addr=(x:string)=>x.slice(2).toLowerCase().padStart(64,'0');
+ const usdt='0x55d398326f99059ff775485246999027b3197955';
+ const nvdab='0x02fca66c1d1afb4e2a7884261eb00f63598a7436';
+ const head=[w(123n),w(0n),addr(wallet),addr(usdt),w(1000000000000000000n),
+  addr(nvdab),w(995n),addr(wallet),w(1000n),w(320n)].join('');
+ const data='0xad43f73d'+head+w(64n)+'11'.repeat(64);
+ const tx={from:wallet,to:OBSERVED_BSC_LIQUIDMESH_ROUTER,data,value:'0' as const,gas:'250000'};
+ const expected={inputToken:usdt,outputToken:nvdab,sender:wallet,recipient:wallet,
+  inputAmountRaw:'1000000000000000000',minOutputRaw:'995',deadline:Date.now()+20000};
+ const parsed=inspectObservedLiquidMeshCalldata(tx,expected);
+ assert.equal(parsed.ok,true);
+ if(parsed.ok){assert.equal(parsed.value.opaquePayloadBytes,64);
+  assert.equal(parsed.value.recipientProven,false);
+  assert.equal(parsed.value.permissionToSpend,false);}
+ assert.equal(verifyKnownRouterSemantics(tx,expected).ok,false);
+ // A mutated opaque nested instruction can still pass OUTER structure, proving
+ // why structural matching MUST NEVER become live authorization.
+ const changedOpaque=data.slice(0,-2)+'22';
+ assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:changedOpaque},expected).ok,true);
+ assert.equal(verifyKnownRouterSemantics({...tx,data:changedOpaque},expected).ok,false);
+ assert.equal(inspectObservedLiquidMeshCalldata(tx,{...expected,inputAmountRaw:'2'}).ok,false);
+ assert.equal(inspectObservedLiquidMeshCalldata(tx,{...expected,outputToken:wallet}).ok,false);
+ assert.equal(inspectObservedLiquidMeshCalldata(tx,{...expected,minOutputRaw:'900'}).ok,false);
+ assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:data.slice(0,-2)},expected).ok,false);
+ assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:data.slice(0,-64)},expected).ok,false);
+ assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:'0x095ea7b3'+data.slice(10)},expected).ok,false);
+ assert.equal(inspectObservedLiquidMeshCalldata({...tx,to:wallet},expected).ok,false);
+});

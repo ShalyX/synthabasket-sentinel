@@ -3,6 +3,7 @@ import {assessPreview} from '@/lib/sentinel/policy';
 import {parseSimulationIntent,eligibleToSimulate,rawUsdtAmount,selectRouteForSimulation,checkSwapBuild,assessSimulation,SIMULATION_MAX_IMPACT_PERCENT,SIMULATION_SLIPPAGE_PERCENT} from '@/lib/sentinel/execution-preflight';
 import {evaluateLiveSpend,exactApprovalCalldata,parseTrustedTargets,parseTrustedSelectors} from '@/lib/sentinel/execution-authorization';
 import {inspectBuildMinimum,verifyKnownRouterSemantics} from '@/lib/sentinel/route-audit';
+import {assessIssuerTradingEligibility} from '@/lib/sentinel/issuer-eligibility';
 import {getSentinelMarkets,binanceGet,binanceSimulateEvmTx,BSC_USDT,UpstreamError} from '@/lib/sentinel/server';
 
 export const runtime='nodejs';
@@ -46,6 +47,8 @@ export async function POST(req:NextRequest){
   if(!token)return reply({error:'No issuer contract in signed BSC inventory.',phase:'BLOCKED'},404);
   const eligible=eligibleToSimulate(token);
   if(!eligible.ok)return reply({error:eligible.message,phase:'BLOCKED'},409);
+  const issuerPermission=assessIssuerTradingEligibility(token.platform);
+  if(!issuerPermission.canTrade)return reply({error:issuerPermission.reason,phase:'BLOCKED',eligibility:issuerPermission},451);
   const amount=rawUsdtAmount(intent.amountUsd);
   const q={binanceChainId:'56',amount,fromTokenAddress:BSC_USDT,toTokenAddress:token.address,userWalletAddress:intent.walletAddress};
   const quoted=await binanceGet('/api/v1/dex/aggregator/quote',q);
