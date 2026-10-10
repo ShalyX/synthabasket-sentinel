@@ -983,7 +983,7 @@
 .desk-guide-closing>div:last-child>p{font-size:12px;line-height:1.8;color:#667869}
 .desk-guide-closing a{display:inline-flex;align-items:center;gap:14px;margin-top:25px;font-size:12px;font-weight:740;border-bottom:1px solid var(--ink);padding-bottom:9px;color:#264735}
 .desk-guide-closing a:hover{color:var(--heat);border-color:var(--heat)}
-/* A fifth tab needs a slightly earlier compact-nav breakpoint. */
+/* The first-class product destinations need an earlier compact-nav breakpoint. */
 @media(max-width:1110px) and (min-width:761px){
  .desk-header-inner{height:73px}
  .desk-mobile-toggle{display:inline-grid;place-items:center}
@@ -1212,6 +1212,7 @@
 .desk-auth-receipt a{color:#a2573a;text-decoration:underline}
 .desk-auth-receipt button{display:block;background:#e1e9dc;padding:10px 12px;font:700 10px var(--font-mono),monospace;margin-top:14px}
 .desk-auth-footnote{margin-top:18px;font-size:10px}
+.product-auto-buy{margin-top:20px}.product-auto-state{display:flex;align-items:center;gap:10px;padding:17px;margin-top:16px;background:#f7f8f3;color:#45624d;font-size:12px}.product-consent{background:#fffdf5;border:1px solid #b4c5b4;padding:16px}.product-action-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#edf3e9;padding:13px;margin-top:14px}.product-action-summary span{font-size:12px;font-weight:750}.product-action-summary b{font:500 21px Georgia,serif}.product-auto-disclosure{margin-top:20px}.product-purchase-complete{display:flex;align-items:center;gap:13px;margin-top:17px;padding:17px;background:#dff0dc;color:#245f39}.product-purchase-complete>div{flex:1}.product-purchase-complete strong{font-size:13px}.product-purchase-complete p{font-size:11px;margin:5px 0 0}.product-purchase-complete>a{display:flex;align-items:center;gap:6px;color:#245f39;font-size:11px;font-weight:800}.desk-auth-receipt small{display:block;margin-top:8px;font-size:10px;color:#667567}.desk-auth-error button{border:0;background:transparent;color:inherit;text-decoration:underline;cursor:pointer;font-weight:750}.product-auto-buy .desk-auth-review dl{margin-bottom:0}
 @media(max-width:620px){.desk-auth-panel{padding:17px 13px}.desk-auth-header h2{font-size:26px}}
 
 /* M5 / portfolio watch — observed BSC balances, bounded drift, no orders */

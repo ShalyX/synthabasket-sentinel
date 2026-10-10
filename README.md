@@ -2,25 +2,24 @@
 
 **An issuer-aware basket preflight agent for tokenized stocks on BNB Smart Chain: choose the actual wrapper, obtain live quotes, simulate against your wallet, authorize through browser or Agentic Wallet, and verify what settled.**
 
-[Guided Demo — start here](https://synthabasket-sentinel.vercel.app/sentinel/demo) · [Sentinel live app](https://synthabasket-sentinel.vercel.app/sentinel) · [NVDA issuer comparison](https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA) · [Source/runbook](docs/sentinel/JUDGE_RUNBOOK.md)
+[The Brief — start here](https://synthabasket-sentinel.vercel.app/sentinel) · [Market Index](https://synthabasket-sentinel.vercel.app/sentinel/markets) · [Buy stocks](https://synthabasket-sentinel.vercel.app/sentinel/buy) · [NVDA issuer comparison](https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA) · [Source/runbook](docs/sentinel/JUDGE_RUNBOOK.md)
 
 Sentinel is an independent BNB Chain hackathon project, **not** the Solana STOCKLANA SynthaBasket submission. The original Solana project lives separately at [ShalyX/synthabasket](https://github.com/ShalyX/synthabasket).
 
 ## Product
 
-The primary product is one journey backed by six explicit decisions:
+The Brief is the landing page. Market Index has its own first-class research route, and buying has a separate short consumer journey backed by six internal safety decisions:
 
-1. **Build** — choose up to four stocks and the exact bStocks or Ondo wrapper behind each ticker, then set weights and a $1–$25 BSC USDT budget.
-2. **Review / Preflight** — bind every leg to its issuer contract, request fresh quotes, inspect funding and simulate wallet-specific calldata. A quote or predicted pass is never treated as a fill.
-3. **Purchase** — choose local Binance Agentic Wallet basket execution or direct, per-leg browser-wallet signing. Both routes require fresh evidence, explicit eligibility confirmation and wallet-owned authorization.
-4. **Portfolio** — read the selected issuer-token balances from BSC and reconcile actual settlement rather than inventing positions from basket targets.
+1. **Choose** — select up to four stocks and a $1–$25 BSC USDT total. Sentinel applies equal allocation and a supported issuer default; wrapper and weight customization remain available.
+2. **Review and buy** — inventory, quotes, funding, allowance and route simulations run automatically. The browser wallet is the primary signer; the user makes one basket acknowledgement and approves every required wallet transaction.
+3. **Portfolio** — receipt polling, token-delivery verification and position refresh run automatically after submission.
 
-The Guided Demo retains the complete six-decision state model: wrapper selection, allocation, quote review, calldata simulation, spend authorization and settlement/portfolio observation. The older Market Index, Instrument Dossier, Basket Studio, Execution Review, Simulation Lab and Watch screens remain available as advanced diagnostics. See the [current M15 product context](docs/sentinel/M15_PRODUCT_RESTRUCTURE_2026-10-10.md).
+The complete six-decision state model remains underneath: wrapper selection, allocation, quote review, calldata simulation, spend authorization and settlement/portfolio observation. Market Index, Instrument Dossier, Simulation Lab, the local Agentic bridge and the historical Guided Demo remain advanced diagnostics. See the [automatic checkout plan](docs/sentinel/M17_AUTOMATIC_CHECKOUT_2026-10-10.md).
 
 ### Current execution paths
 
-- **Binance Agentic Wallet:** whole-basket, bStocks-only execution through an origin-restricted local bridge. It requires a private loopback pairing secret, fresh preview, funding checks, explicit basket approval and `EXECUTE BASKET`; it journals before submission and stops on uncertain settlement.
-- **Browser wallet:** bStocks or Ondo execution one leg at a time. The server requests an authenticated Binance build, pins the outer transaction facts, requires exact-size approval, and reconciles the exact wallet-submitted calldata plus issuer-token delivery. The nested LiquidMesh route is explicitly provider-trusted, not represented as independently decoded.
+- **Browser wallet (primary):** bStocks or Ondo execution one leg at a time. The server automatically requests an authenticated Binance build, pins the outer transaction facts, detects exact-size approval needs, monitors receipts and reconciles issuer-token delivery. Every signature still requires a wallet click.
+- **Binance Agentic Wallet (advanced):** whole-basket, bStocks-only execution through an origin-restricted local bridge. It requires local setup, a private loopback pairing secret, fresh preview, funding checks, explicit basket approval and `EXECUTE BASKET`; it journals before submission and stops on uncertain settlement.
 
 The direct browser route is server-default-off. Enabling it requires the reviewed environment allowlists in `.env.example`, fresh user eligibility and provider-route attestations, and a separate wallet confirmation for every approval or swap.
 

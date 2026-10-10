@@ -7,7 +7,7 @@ import {useWallet} from '@/components/sentinel/WalletContext';
 import {WalletControls} from '@/components/sentinel/WalletControls';
 import {TokenMark} from '@/components/sentinel/DeskBits';
 import {ExecutionAuthorization} from '@/components/sentinel/ExecutionAuthorization';
-import {checkoutGate,checkoutPlan,LIVE_BASKET_MAX_USD,planKey,quoteState} from '@/lib/sentinel/product-journey';
+import {checkoutPlan,LIVE_BASKET_MAX_USD,planKey,quoteState} from '@/lib/sentinel/product-journey';
 import type {QuotePreview} from '@/lib/sentinel/model';
 import {formatUsd} from '@/lib/sentinel/model';
 
@@ -28,17 +28,15 @@ export default function InvestmentCheckout(){
  const [fundsError,setFundsError]=useState('');
  const [ran,setRan]=useState(false);
  const [error,setError]=useState('');
- const [purchaseLane,setPurchaseLane]=useState<'agentic'|'browser'>('agentic');
  const controller=useRef<AbortController|null>(null);
  useEffect(()=>{try{const n=Number(sessionStorage.getItem('sentinel-budget-v1'));if(Number.isFinite(n)&&n>=1&&n<=LIVE_BASKET_MAX_USD)setBudget(n);}catch{/* optional */}},[]);
  useEffect(()=>{setNow(Date.now());const timer=window.setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[]);
  const tokens=snapshot?.tokens??[];
  const plan=useMemo(()=>checkoutPlan(basket,tokens,budget),[basket,tokens,budget]);
  const key=planKey(plan,wallet.address);
- const scoped=Object.fromEntries(Object.entries(quotes).map(([ticker,x])=>[ticker,x.quote])) as Record<string,QuotePreview|undefined>;
- const gate=checkoutGate(plan,wallet.ready,feed==='live',scoped,now);
  const hasBlock=Object.values(quotes).some(x=>x.state==='blocked')||Object.values(sims).some(x=>x.state==='blocked');
  const quoteBlocked=Object.values(quotes).some(x=>x.state==='blocked');
+ const pricesObserved=plan.legs.length>0&&plan.legs.every(x=>quotes[x.ticker]?.state==='reviewed');
  const allSimsPass=wallet.ready&&plan.legs.length>0&&plan.legs.every(x=>sims[x.ticker]?.state==='pass');
  const approvalNeeded=wallet.ready&&plan.legs.some(x=>sims[x.ticker]?.state==='blocked'&&/allowance/i.test(sims[x.ticker]?.reason||''));
  useEffect(()=>{
@@ -108,6 +106,10 @@ export default function InvestmentCheckout(){
   }catch(e){if(alive())setError(e instanceof Error?e.message:'Review interrupted.');}
   finally{if(controller.current===abort){setBusy(false);controller.current=null;}}
  }
+ useEffect(()=>{
+  if(feed!=='live'||plan.issues.length||!plan.legs.length||busy||ran)return;
+  void analyze();
+ },[key,feed,plan.issues.length,plan.legs.length,busy,ran]);
  const keyRef=useRef(key);keyRef.current=key;
  const statuses=[
   {label:'Your basket',status:!plan.issues.length&&feed==='live'?'pass':'fail',
@@ -116,22 +118,22 @@ export default function InvestmentCheckout(){
    detail:wallet.ready?'BSC account '+wallet.address?.slice(0,9)+'…'+wallet.address?.slice(-5):'Connect a compatible BSC wallet to check this account.'},
   {label:'Funds & network fees',status:funds?.usdtCoversAmount?'pass':funds?'fail':'pending',
    detail:funds?('USDT '+(funds.usdtBalance||'—')+' · BNB '+(funds.bnbBalance||'—')+' · gas estimation '+(funds.bnbCoversBufferedSwapEstimate===true?'sufficient':funds.bnbCoversBufferedSwapEstimate===false?'not sufficient':'not verified')):fundsError||'No current wallet balance check.'},
-  {label:'Venue prices',status:gate.quotes?'pass':hasBlock?'fail':'pending',
-   detail:gate.quotes?'All live indications passed the price policy. Quotes expire after 30 seconds.':'Each issuer needs a fresh, size-specific quote.'},
+  {label:'Venue prices',status:pricesObserved?'pass':hasBlock?'fail':'pending',
+   detail:pricesObserved?'Every issuer returned a policy-cleared indication. A fresh executable route is rebuilt automatically before signing.':'Each issuer needs a size-specific price indication.'},
   {label:'Issuer eligibility',status:'pending',detail:'You must explicitly attest eligibility for the selected issuer before every live authorization.'},
   {label:'Execution route',status:allSimsPass?'pass':'pending',detail:allSimsPass?'Unsigned provider-built routes predicted success. A fresh route is rebuilt before signing.':approvalNeeded?'The route reached simulation but needs an exact-size USDT approval. Prepare it in the browser-wallet lane below.':'Connect a wallet and run simulation, or use the local Agentic Wallet route.'}
  ] as const;
  return <div className="desk-wrap product-invest">
-  <div className="product-breadcrumb"><Link href="/sentinel"><ArrowLeft size={16}/> Edit basket</Link><span>02 / REVIEW & INVEST</span></div>
-  <header className="product-invest-head"><div><span className="product-section-label">THE CHECKOUT / NO SURPRISES</span>
-   <h1>Review what<br/><em>you'd own.</em></h1>
-   <p>One place for your chosen stocks, live venue indications, wallet readiness and the exact reasons a purchase can—or cannot—proceed.</p></div>
+  <div className="product-breadcrumb"><Link href="/sentinel/buy"><ArrowLeft size={16}/> Change basket</Link><span>REVIEW → BUY</span></div>
+  <header className="product-invest-head"><div><span className="product-section-label">CHECKOUT</span>
+   <h1>Review.<br/><em>Then buy.</em></h1>
+   <p>Sentinel is checking live prices, wallet readiness and transaction safety automatically. You only approve the actions your wallet must sign.</p></div>
    <div className="product-invest-summary"><span>PROPOSED INPUT</span><strong>{$(plan.totalUsd)}</strong><small>{basket.length} issuer contracts · BSC USDT</small></div>
   </header>
   <div className="product-invest-layout">
    <section className="product-invest-main">
     <div className="product-paper">
-     <div className="product-paper-top"><span>01 / YOUR PROPOSED ORDER</span><span>NOT AN EXECUTED TRADE</span></div>
+     <div className="product-paper-top"><span>YOUR ORDER</span><span>{busy?'CHECKING AUTOMATICALLY':'LIVE REVIEW'}</span></div>
      {plan.legs.length?plan.legs.map((leg,i)=>{
       const status=quotes[leg.ticker];const sim=sims[leg.ticker];
       const fresh=status?.quote&&quoteState(leg,status.quote,now)==='REVIEWED';
@@ -139,54 +141,46 @@ export default function InvestmentCheckout(){
        <div className="product-order-heading"><span className="product-order-index">{String(i+1).padStart(2,'0')}</span>
         <TokenMark token={leg.token}/><div><strong>{leg.ticker}</strong><small>{leg.token.company} · {leg.platform==='bstock'?'bStocks':'Ondo'}</small></div>
         <div className="product-order-exposure"><b>{$(leg.amountUsd)}</b><small>{leg.weight}% target</small></div></div>
-       <div className="product-order-quote"><div><span>LIVE INDICATION</span><strong>{status?.state==='pending'?'Checking…':fresh?status.quote!.tokenAmount.toLocaleString('en-US',{maximumFractionDigits:9})+' '+leg.symbol:'—'}</strong></div>
-        <div><span>VENUE / POLICY</span><strong>{fresh?status.quote!.vendor||'Unnamed venue':status?.error||'Awaiting price review'}</strong></div>
-        <div><span>ROUTE SIMULATION</span><strong>{sim?.state==='pass'?'Predicted pass':sim?.state==='pending'?'Checking…':sim?.reason||'Not tested'}</strong></div></div>
-       {status?.quote&&<p className="product-leg-foot">Quote checked {new Date(status.quote.checkedAt).toLocaleTimeString()} · {fresh?'fresh':'expired or flagged'} · {status.quote.priceImpactPct===null?'impact unavailable':status.quote.priceImpactPct.toFixed(4)+'% indicated impact'}</p>}
+       <div className="product-order-quote"><div><span>EXPECTED TOKENS</span><strong>{status?.state==='pending'?'Checking…':status?.quote?status.quote.tokenAmount.toLocaleString('en-US',{maximumFractionDigits:9})+' '+leg.symbol:'—'}</strong></div>
+        <div><span>AUTOMATIC CHECK</span><strong>{sim?.state==='pass'?'Ready':sim?.state==='pending'?'Checking…':approvalNeeded?'Wallet approval needed':status?.error||'Waiting for wallet'}</strong></div></div>
+       {status?.quote&&<p className="product-leg-foot">Indication checked {new Date(status.quote.checkedAt).toLocaleTimeString()} · {fresh?'live now':'fresh route rebuilt before wallet request'} · {status.quote.priceImpactPct===null?'impact unavailable':status.quote.priceImpactPct.toFixed(4)+'% indicated impact'}</p>}
        {status?.error&&<p className="product-leg-error"><XCircle size={14}/>{status.error}</p>}
        <details className="product-advanced-details"><summary>Issuer and route details</summary><p>Token contract: <code>{leg.contract}</code></p><p>Token/share conversion: {leg.token.tokenToShareRatio?.toFixed(9)??'unavailable'}. Provider mark: {formatUsd(leg.token.tokenPrice)} per token. Neither a quote nor an indicated share equivalent is a settled token amount.</p></details>
       </article>;
-     }):<div className="product-review-empty"><p>There isn't a basket ready to review.</p><Link href="/sentinel">Build a basket <ArrowRight size={16}/></Link></div>}
+     }):<div className="product-review-empty"><p>There isn't a basket ready to review.</p><Link href="/sentinel/buy">Build a basket <ArrowRight size={16}/></Link></div>}
      <div className="product-paper-total"><span>TOTAL PROPOSED SPEND</span><b>{$(plan.totalUsd)} USDT</b></div>
      <p className="product-paper-disclaimer">Transaction fees, final received tokens and issuer restrictions may differ. No live order has been submitted by this screen.</p>
     </div>
-    <section className="product-preflight" id="preflight">
-     <div className="product-preflight-title"><div><span className="product-section-label">02 / SENTINEL'S SAFETY CHECKS</span><h2>Let the agent do the checking.</h2></div><span>READ-ONLY</span></div>
-     {statuses.map((s,i)=><div className="product-check" key={s.label}>
+    <section className="product-preflight product-auto-preflight" id="preflight">
+     <div className="product-preflight-title"><div><span className="product-section-label">AUTOMATIC SAFETY CHECK</span><h2>{busy?step:quoteBlocked?'Something needs attention':wallet.ready?'Ready for wallet authorization':'Connect your wallet to finish'}</h2></div>
+      <span>{busy?'RUNNING':quoteBlocked?'BLOCKED':ran?'UP TO DATE':'STARTING'}</span></div>
+     <div className="product-auto-progress"><span className={feed==='live'?'done':''}>Live inventory</span><span className={pricesObserved?'done':''}>Price source</span><span className={wallet.ready?'done':''}>Wallet</span><span className={allSimsPass||approvalNeeded?'done':''}>Route check</span></div>
+     <details className="product-advanced-details"><summary>See all automatic checks</summary>{statuses.map(s=><div className="product-check" key={s.label}>
       <span className={'product-check-icon '+s.status}>{s.status==='pass'?<Check size={17}/>:s.status==='fail'?<ShieldAlert size={17}/>:<Clock3 size={17}/>}</span>
       <div><strong>{s.label}</strong><small>{s.detail}</small></div><span>{s.status==='pass'?'CHECKED':s.status==='fail'?'NOT CLEARED':'PENDING'}</span>
-     </div>)}
-     {plan.issues.length>0&&<div className="product-issue">{plan.issues.join(' · ')}</div>}
-     <button type="button" className="product-preflight-run" disabled={busy||plan.issues.length>0||feed!=='live'} onClick={()=>void analyze()}>
-      <RefreshCw size={17} className={busy?'desk-spin':''}/> {busy?step:ran?'Refresh all prices & checks':'Check prices, funding & execution safety'} <ArrowRight size={16}/></button>
+     </div>)}</details>
+     {(error||quoteBlocked)&&<button type="button" className="product-preflight-run" disabled={busy} onClick={()=>void analyze()}><RefreshCw size={17}/> Retry automatic checks</button>}
      {error&&<p className="product-leg-error" role="alert">{error}</p>}
-     <p className="product-preflight-note">Quotes, funding checks and unsigned simulation never sign or send transactions. Quotes expire and simulation outcomes are predictions, not proof of a fill.</p>
     </section>
     <section className="product-purchase" id="purchase">
-     <div className="product-preflight-title"><div><span className="product-section-label">05 / AUTHORIZE &amp; PURCHASE</span><h2>One plan. Two signer routes.</h2></div><span>USER AUTHORIZED</span></div>
-     <p className="product-purchase-intro">Both routes rebuild fresh quotes before spending. Neither route stores a seed phrase or treats simulation as settlement.</p>
-     <div className="product-lane-tabs" role="tablist" aria-label="Purchase route">
-      <button type="button" role="tab" aria-selected={purchaseLane==='agentic'} className={purchaseLane==='agentic'?'selected':''} onClick={()=>setPurchaseLane('agentic')}><b>Agentic Wallet</b><span>Whole basket · bStocks · local bridge</span></button>
-      <button type="button" role="tab" aria-selected={purchaseLane==='browser'} className={purchaseLane==='browser'?'selected':''} onClick={()=>setPurchaseLane('browser')}><b>Browser wallet</b><span>Per-leg signing · bStocks or Ondo</span></button>
-     </div>
-     {purchaseLane==='agentic'?<div className="product-agentic-lane">
-      <span className="product-route-badge">RECOMMENDED FOR BASKET EXECUTION</span><h3>Purchase sequentially with Binance Agentic Wallet.</h3>
-      <p>The origin-restricted bridge runs on your computer, previews every bStocks leg, requires the phrase <code>EXECUTE BASKET</code>, journals before submission, stops on ambiguity, and independently reconciles BSC delivery.</p>
-      {basket.some(x=>x.platform!=='bstock')&&<p className="product-lane-warning">This basket contains an Ondo wrapper. Switch it to bStocks in Build, or use browser-wallet signing for that leg.</p>}
-      <Link className="product-route-cta" href="/sentinel/agent">Open Agentic Wallet purchase <ArrowRight size={17}/></Link>
-     </div>:<ExecutionAuthorization legs={plan.legs.map(x=>({ticker:x.ticker,platform:x.platform,amountUsd:x.amountUsd}))}
-       enabled={wallet.ready&&feed==='live'&&plan.issues.length===0&&ran&&!quoteBlocked&&!busy} operationKey={key}/>}
+     <div className="product-preflight-title"><div><span className="product-section-label">BUY</span><h2>Approve only in your wallet.</h2></div><span>USER AUTHORIZED</span></div>
+     <ExecutionAuthorization legs={plan.legs.map(x=>({ticker:x.ticker,platform:x.platform,amountUsd:x.amountUsd}))}
+      enabled={wallet.ready&&feed==='live'&&plan.issues.length===0&&ran&&!quoteBlocked&&!busy} operationKey={key}/>
+     <details className="product-advanced-details product-agentic-option"><summary>Advanced: use Binance Agentic Wallet instead</summary>
+      <p>The local bridge can execute a bStocks basket, but it requires local setup and is intended for advanced users.</p>
+      {basket.some(x=>x.platform!=='bstock')&&<p className="product-lane-warning">This basket contains an Ondo wrapper; the Agentic route supports bStocks only.</p>}
+      <Link href="/sentinel/agent">Open advanced Agentic checkout <ArrowRight size={15}/></Link></details>
     </section>
    </section>
    <aside className="product-invest-side">
-    <span className="product-section-label">03 / YOUR WALLET</span><h2>Only you<br/><em>authorize funds.</em></h2>
-    <p>Connect a supported wallet on BNB Smart Chain. Your wallet address is used to inspect balances and issuer holdings. No seed phrase or developer installation is required.</p>
+    <span className="product-section-label">YOUR WALLET</span><h2>Connect.<br/><em>We check the rest.</em></h2>
+    <p>Connect on BNB Smart Chain. Sentinel automatically checks balances, allowance, the live route and settlement. No seed phrase or developer installation is required.</p>
     <div className="product-connect-wallet"><WalletControls/><small>{wallet.ready?wallet.address:'Connect a BSC wallet to check available USDT and network fees.'}</small></div>
-    <div className="product-route-summary"><strong>Two purchase routes available</strong><p>Agentic Wallet executes an approved bStocks basket locally. Browser wallet prepares one exact-size approval or swap at a time.</p></div>
-    <a href="#purchase" className="product-buy-ready">Choose purchase route <ArrowRight size={17}/></a>
-    <p className="product-side-note">A quote or simulated success never spends funds. Each route requires a fresh review, explicit eligibility confirmation and a wallet-owned authorization.</p>
+    <div className="product-route-summary"><strong>{busy?'Running automatic checks…':wallet.ready?'Wallet connected':'One connection required'}</strong><p>{wallet.ready?'You will only be interrupted when your wallet must approve an on-chain action.':'Connect once; read-only checks continue automatically.'}</p></div>
+    <a href="#purchase" className="product-buy-ready">Continue to buy <ArrowRight size={17}/></a>
+    <p className="product-side-note">Sentinel never signs automatically. Every on-chain approval or purchase still requires your wallet confirmation.</p>
     <Link href="/sentinel/portfolio" className="product-invest-portfolio">View your on-chain portfolio <ArrowUpRight size={16}/></Link>
-    <details className="product-advanced-details product-advanced-rail"><summary>Advanced diagnostics</summary><Link href="/sentinel/review">Detailed venue research →</Link><Link href="/sentinel/execute">Simulation Lab →</Link><Link href="/sentinel/agent">Agentic Wallet execution room →</Link></details>
+    <details className="product-advanced-details product-advanced-rail"><summary>Advanced tools</summary><Link href="/sentinel/review">Venue research →</Link><Link href="/sentinel/execute">Simulation diagnostics →</Link><Link href="/sentinel/agent">Agentic Wallet bridge →</Link></details>
    </aside>
   </div>
  </div>;
