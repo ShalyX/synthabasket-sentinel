@@ -65,7 +65,7 @@ export default function ProductPortfolio(){
   return {x,token,observed,value,quantity,actual};
  });
  return <div className="desk-wrap product-portfolio">
-  <div className="product-breadcrumb"><Link href="/sentinel">Build a basket <ArrowRight size={15}/></Link><span>03 / YOUR PORTFOLIO</span></div>
+  <div className="product-breadcrumb"><Link href="/sentinel/buy">Build a basket <ArrowRight size={15}/></Link><span>03 / YOUR PORTFOLIO</span></div>
   <header className="product-portfolio-hero"><div>
    <span className="product-section-label">ON-CHAIN / BSC 56</span><h1>Your positions.<br/><em>Not promises.</em></h1>
    <p>See what your connected wallet actually holds in the issuer contracts you selected. The balance comes from BSC—not from an assumed order or a simulated fill.</p>
@@ -76,7 +76,7 @@ export default function ProductPortfolio(){
     <div className="product-portfolio-top"><div><span className="product-section-label">01 / YOUR SELECTED STOCKS</span><h2>Holdings in this basket</h2></div>
      <button type="button" onClick={refresh} disabled={!canRead||loading}><RefreshCw size={17} className={loading?'desk-spin':''}/>{loading?'Reading BSC…':'Refresh positions'}</button></div>
     {!basket.length&&<div className="product-portfolio-empty"><h3>No stocks selected yet.</h3><p>Choose assets in Build. We only inspect the specific issuer contracts you selected and never invent holdings.</p>
-     <Link href="/sentinel">Explore stocks <ArrowRight size={16}/></Link></div>}
+     <Link href="/sentinel/markets">Explore stocks <ArrowRight size={16}/></Link></div>}
     {basket.length>0&&!wallet.ready&&<div className="product-portfolio-empty"><Wallet size={25}/><h3>Connect your investment wallet.</h3>
      <p>The same wallet you connect in Invest is used here automatically. We won't ask for keys or a separate developer login.</p><WalletControls/></div>}
     {basket.length>0&&wallet.ready&&<div className="product-holdings">
@@ -102,7 +102,7 @@ export default function ProductPortfolio(){
     <WalletControls/><p className="product-portfolio-address">{wallet.address||'No connected wallet'}</p>
     <div className="product-portfolio-side-detail"><strong>Scope of this view</strong><p>Only the {basket.length} currently selected contracts. Other wallets, USDT and assets outside the basket are not included in the displayed value.</p></div>
     <div className="product-portfolio-side-detail"><strong>What a price means</strong><p>Issuer marks are not executable selling prices. Token units are not the same as share-equivalent exposure.</p></div>
-    <Link href="/sentinel">Edit basket <ArrowRight size={16}/></Link>
+    <Link href="/sentinel/buy">Edit basket <ArrowRight size={16}/></Link>
     <Link href="/sentinel/invest">Review investment <ArrowUpRight size={16}/></Link>
    </aside>
   </div>

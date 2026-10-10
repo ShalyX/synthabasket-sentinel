@@ -29,7 +29,7 @@ export default function MarketIndex(){
  return <div className="desk-wrap desk-internal-page">
   <div className="desk-breadcrumb"><Link href="/sentinel">THE BRIEF</Link><span>→</span><b>MARKET INDEX</b></div>
   <section className="desk-page-head desk-index-head">
-   <div><Eyebrow>ROOM 02 / STOCK INVENTORY</Eyebrow><h1>Under one ticker,<br/><em>different instruments.</em></h1><p>Same company. Different issuance contracts, conversion ratios and trading conditions. Start with the instrument, not the logo.</p></div>
+   <div><Eyebrow>MARKET INDEX / STOCK INVENTORY</Eyebrow><h1>Under one ticker,<br/><em>different instruments.</em></h1><p>Same company. Different issuance contracts, conversion ratios and trading conditions. Start with the instrument, not the logo.</p></div>
    <aside className="desk-index-aside"><span className="desk-side-title">WHAT YOU'RE LOOKING AT</span><strong>{snapshot?.count??'—'}</strong><span>issuer-specific token contracts</span><div className="desk-aside-line"><span>ONDO</span><b>{snapshot?issuerCounts.ondo:'—'}</b></div><div className="desk-aside-line"><span>BSTOCKS</span><b>{snapshot?issuerCounts.bstock:'—'}</b></div></aside>
   </section>
   <section className="desk-directory">

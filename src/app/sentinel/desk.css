@@ -983,7 +983,7 @@
 .desk-guide-closing>div:last-child>p{font-size:12px;line-height:1.8;color:#667869}
 .desk-guide-closing a{display:inline-flex;align-items:center;gap:14px;margin-top:25px;font-size:12px;font-weight:740;border-bottom:1px solid var(--ink);padding-bottom:9px;color:#264735}
 .desk-guide-closing a:hover{color:var(--heat);border-color:var(--heat)}
-/* A fifth tab needs a slightly earlier compact-nav breakpoint. */
+/* The first-class product destinations need an earlier compact-nav breakpoint. */
 @media(max-width:1110px) and (min-width:761px){
  .desk-header-inner{height:73px}
  .desk-mobile-toggle{display:inline-grid;place-items:center}

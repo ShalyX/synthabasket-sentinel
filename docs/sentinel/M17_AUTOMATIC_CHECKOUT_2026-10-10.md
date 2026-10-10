@@ -4,7 +4,15 @@
 
 ## Consumer journey
 
-The primary path is now:
+The product hierarchy is now:
+
+- **The Brief** (`/sentinel`) is the editorial landing page and product orientation.
+- **Market Index** (`/sentinel/markets`) is the dedicated stock and issuer-instrument directory.
+- **Buy stocks** (`/sentinel/buy`) owns basket construction and amount selection.
+- **Checkout** (`/sentinel/invest`) owns automatic preflight and wallet authorization.
+- **Portfolio** (`/sentinel/portfolio`) owns verified on-chain holdings.
+
+The purchase path is:
 
 1. **Choose** stocks and a total USDT amount.
 2. **Review** the resulting basket and expected token amounts.

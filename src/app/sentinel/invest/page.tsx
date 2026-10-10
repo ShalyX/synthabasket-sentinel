@@ -124,7 +124,7 @@ export default function InvestmentCheckout(){
   {label:'Execution route',status:allSimsPass?'pass':'pending',detail:allSimsPass?'Unsigned provider-built routes predicted success. A fresh route is rebuilt before signing.':approvalNeeded?'The route reached simulation but needs an exact-size USDT approval. Prepare it in the browser-wallet lane below.':'Connect a wallet and run simulation, or use the local Agentic Wallet route.'}
  ] as const;
  return <div className="desk-wrap product-invest">
-  <div className="product-breadcrumb"><Link href="/sentinel"><ArrowLeft size={16}/> Change basket</Link><span>REVIEW → BUY</span></div>
+  <div className="product-breadcrumb"><Link href="/sentinel/buy"><ArrowLeft size={16}/> Change basket</Link><span>REVIEW → BUY</span></div>
   <header className="product-invest-head"><div><span className="product-section-label">CHECKOUT</span>
    <h1>Review.<br/><em>Then buy.</em></h1>
    <p>Sentinel is checking live prices, wallet readiness and transaction safety automatically. You only approve the actions your wallet must sign.</p></div>
@@ -147,7 +147,7 @@ export default function InvestmentCheckout(){
        {status?.error&&<p className="product-leg-error"><XCircle size={14}/>{status.error}</p>}
        <details className="product-advanced-details"><summary>Issuer and route details</summary><p>Token contract: <code>{leg.contract}</code></p><p>Token/share conversion: {leg.token.tokenToShareRatio?.toFixed(9)??'unavailable'}. Provider mark: {formatUsd(leg.token.tokenPrice)} per token. Neither a quote nor an indicated share equivalent is a settled token amount.</p></details>
       </article>;
-     }):<div className="product-review-empty"><p>There isn't a basket ready to review.</p><Link href="/sentinel">Build a basket <ArrowRight size={16}/></Link></div>}
+     }):<div className="product-review-empty"><p>There isn't a basket ready to review.</p><Link href="/sentinel/buy">Build a basket <ArrowRight size={16}/></Link></div>}
      <div className="product-paper-total"><span>TOTAL PROPOSED SPEND</span><b>{$(plan.totalUsd)} USDT</b></div>
      <p className="product-paper-disclaimer">Transaction fees, final received tokens and issuer restrictions may differ. No live order has been submitted by this screen.</p>
     </div>

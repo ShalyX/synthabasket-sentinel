@@ -2,13 +2,13 @@
 
 **An issuer-aware basket preflight agent for tokenized stocks on BNB Smart Chain: choose the actual wrapper, obtain live quotes, simulate against your wallet, authorize through browser or Agentic Wallet, and verify what settled.**
 
-[Guided Demo — start here](https://synthabasket-sentinel.vercel.app/sentinel/demo) · [Sentinel live app](https://synthabasket-sentinel.vercel.app/sentinel) · [NVDA issuer comparison](https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA) · [Source/runbook](docs/sentinel/JUDGE_RUNBOOK.md)
+[The Brief — start here](https://synthabasket-sentinel.vercel.app/sentinel) · [Market Index](https://synthabasket-sentinel.vercel.app/sentinel/markets) · [Buy stocks](https://synthabasket-sentinel.vercel.app/sentinel/buy) · [NVDA issuer comparison](https://synthabasket-sentinel.vercel.app/sentinel/markets/NVDA) · [Source/runbook](docs/sentinel/JUDGE_RUNBOOK.md)
 
 Sentinel is an independent BNB Chain hackathon project, **not** the Solana STOCKLANA SynthaBasket submission. The original Solana project lives separately at [ShalyX/synthabasket](https://github.com/ShalyX/synthabasket).
 
 ## Product
 
-The primary product is a short consumer journey backed by six internal safety decisions:
+The Brief is the landing page. Market Index has its own first-class research route, and buying has a separate short consumer journey backed by six internal safety decisions:
 
 1. **Choose** — select up to four stocks and a $1–$25 BSC USDT total. Sentinel applies equal allocation and a supported issuer default; wrapper and weight customization remain available.
 2. **Review and buy** — inventory, quotes, funding, allowance and route simulations run automatically. The browser wallet is the primary signer; the user makes one basket acknowledgement and approves every required wallet transaction.
