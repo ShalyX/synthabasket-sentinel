@@ -47,7 +47,7 @@ This generates a new secret. The user must still request fresh quotes, explicitl
 
 Verified: Python/Node/TypeScript logic and guard tests, Next production build, CORS allowed origin, wrong-origin 403, unauthenticated 401, read-only bridge startup and health. Previously, a manually submitted $1 NVDAB Binance Agentic Wallet purchase reached real BSC settlement; M12 documents the transaction and the raw-token/share-equivalent distinction.
 
-Owner-confirmed on October 10: deployed-site browser loopback pairing, fresh inventory/quote/funding preflight, explicit live execution and full Binance wallet order reconciliation for one $1 NVDAB leg. The deployed UI reported `SETTLED_VERIFIED` and `FINISHED`. This does not yet prove a live multi-leg basket, and no private pairing/session material was collected. The result remains labelled owner-confirmed unless its public transaction hash is recorded and independently checked.
+Verified on October 10: deployed-site browser loopback pairing, fresh inventory/quote/funding preflight, explicit live execution and full Binance wallet order reconciliation for one $1 NVDAB leg. The deployed UI reported `SETTLED_VERIFIED` and `FINISHED`; the owner later supplied the public transaction hash, and independent dual-RPC checks verified the successful receipt, exact $1 USDT debit and NVDAB delivery. See [M16 production purchase proof](M16_PRODUCTION_PURCHASE_PROOF_2026-10-10.md). This does not yet prove a live multi-leg basket, and no private pairing/session material was collected.
 
 **Important prior findings:** the manual NVDAB trade showed different Binance submit/order-list IDs; this is why the bridge requires an unambiguous matched transaction or stops. Binance Wallet may approve virtually unlimited USDT spend to its on-chain wallet spender. The new UI warns this can happen; review and revoke unnecessary approvals separately in Binance Wallet. Vendor token-security audit data was unavailable for NVDAB. A quote is not a legal trading-eligibility attestation.
 
@@ -60,4 +60,4 @@ Owner-confirmed on October 10: deployed-site browser loopback pairing, fresh inv
 
 Read-only loopback probe: GET /health with Origin https://synthabasket-sentinel.vercel.app should respond 200, tradingEnabled false by default; arbitrary Origin should be rejected 403; GET /state without private Authorization should be rejected 401.
 
-One-leg end-to-end status is **OWNER CONFIRMED IN PRODUCTION**. Multi-leg live execution remains unverified. Do not broaden the one-leg result into a claim of unattended or multi-leg execution.
+One-leg end-to-end status is **PUBLICLY VERIFIED ON BSC**. Multi-leg live execution remains unverified. Do not broaden the one-leg result into a claim of unattended or multi-leg execution.
