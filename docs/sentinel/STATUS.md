@@ -6,7 +6,7 @@
 - The production server has the explicitly reviewed browser-execution router, spender and selector allowlists. An unsigned $1 NVDAB production probe returned exact-size `APPROVAL_REQUIRED` calldata.
 - The owner completed the browser-wallet smoke flow and reported terminal Sentinel state `PURCHASE_VERIFIED` after the exact-size approval, swap and settlement checks.
 - The owner separately paired the deployed Agentic page with the loopback bridge, obtained a fresh funded one-leg $1 NVDAB live preview, explicitly executed it and reported terminal states `SETTLED_VERIFIED` and `FINISHED`.
-- These transaction results are owner-confirmed. No private wallet session, pairing secret, raw balance or signing material was collected. A multi-leg live Agentic basket remains unverified.
+- The owner subsequently supplied both public transaction hashes. Dual-RPC receipt/transfer checks and archival balance deltas independently verified each exact $1 USDT debit and NVDAB delivery; see [M16 production purchase proof](M16_PRODUCTION_PURCHASE_PROOF_2026-10-10.md). No private wallet session, pairing secret, raw balance or signing material was collected. A multi-leg live Agentic basket remains unverified.
 - Remaining non-product work: final video, submission and the user's personal DevEx report.
 
 ## October 8, 2026 extraction and read-only evidence

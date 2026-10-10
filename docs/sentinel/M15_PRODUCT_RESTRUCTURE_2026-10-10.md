@@ -56,7 +56,7 @@ Direct browser authorization is default-off at the server. Production must expli
 - The owner then completed a production browser-wallet smoke test. The owner reported that Sentinel verified the exact-size approval, signed $1 NVDAB swap, issuer-token delivery and USDT debit, ending at `PURCHASE_VERIFIED`.
 - The owner separately ran the production local Agentic bridge in deliberately enabled live mode with a fresh one-leg $1 NVDAB preview. The owner reported terminal leg state `SETTLED_VERIFIED` and basket phase `FINISHED`.
 
-The two transaction results above are **owner-confirmed production evidence** from Sentinel's wallet-owned interfaces. No pairing secret, private wallet session, raw balance or signing material was collected. Unless public transaction hashes are added separately, this document does not claim that the repository maintainer independently replayed those private wallet sessions.
+The two transaction results above began as **owner-confirmed production evidence** from Sentinel's wallet-owned interfaces. The owner subsequently supplied both public transaction hashes; independent dual-RPC receipt/transfer checks and archival balance deltas verified the separate $1 USDT debits and NVDAB deliveries. See [M16 production purchase proof](M16_PRODUCTION_PURCHASE_PROOF_2026-10-10.md). No pairing secret, private wallet session, raw balance or signing material was collected.
 
 ## Remaining non-product deliverables
 
