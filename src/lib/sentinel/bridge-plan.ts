@@ -9,7 +9,7 @@ export function buildBridgePlan(
  if(!basket.length||basket.length>4||basket.reduce((sum,x)=>sum+x.weight,0)!==100)
   return {ok:false,reason:'Select one to four basket contracts with weights totaling 100%.'};
  if(basket.some(x=>x.platform!=='bstock'))
-  return {ok:false,reason:'This first execution bridge is verified for bStocks only. Ondo remains research/rehearsal-only.'};
+  return {ok:false,reason:'The Agentic Wallet route supports bStocks only. Switch this wrapper in Build, or use browser-wallet signing for the Ondo leg.'};
  const cents=Math.round(budget*100);
  const weighted=basket.map((leg,index)=>({leg,index,raw:leg.weight*cents/100,allocated:Math.floor(leg.weight*cents/100)}));
  let remaining=cents-weighted.reduce((sum,x)=>sum+x.allocated,0);

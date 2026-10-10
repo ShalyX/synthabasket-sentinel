@@ -3,13 +3,12 @@ import type {Equity,Platform,QuotePreview} from './model';
 
 export type CheckoutLeg={ticker:string;platform:Platform;symbol:string;contract:string;weight:number;amountUsd:number;token:Equity};
 export type CheckoutPlan={totalUsd:number;legs:CheckoutLeg[];issues:string[]};
-export const BROWSER_EXECUTION_RELEASED=false as const;
-export const EXECUTION_HOLD_REASON='Direct browser-wallet spending is not yet released: the swap route and issuer eligibility require independent verification. This is an actual safety stop, not a wallet connection failure.';
+export const LIVE_BASKET_MAX_USD=25;
 
 export function checkoutPlan(basket:BasketLeg[],tokens:Equity[],budget:number):CheckoutPlan{
  const issues:string[]=[];
- if(!Number.isFinite(budget)||budget<1||budget>250||Math.abs(Math.round(budget*100)-budget*100)>1e-5)
-  issues.push('Choose a total between $1 and $250 in exact cents.');
+ if(!Number.isFinite(budget)||budget<1||budget>LIVE_BASKET_MAX_USD||Math.abs(Math.round(budget*100)-budget*100)>1e-5)
+  issues.push('Choose a total between $1 and $25 in exact cents.');
  if(basket.length===0)issues.push('Choose at least one stock.');
  if(basket.length>4)issues.push('A basket can hold at most four stocks.');
  if(basket.reduce((sum,x)=>sum+x.weight,0)!==100&&basket.length>0)issues.push('Basket allocations must total 100%.');
@@ -39,14 +38,14 @@ export function quoteState(leg:CheckoutLeg,quote:QuotePreview|undefined,now:numb
   now-Date.parse(quote.checkedAt)>30000)return 'EXPIRED';
  return quote.review.status==='review'?'REVIEWED':'FLAGGED';
 }
-export type CheckoutGate={inventory:boolean;wallet:boolean;quotes:boolean;issuerEligibility:false;executionSafety:false;canSubmit:false;
- reason:string};
+export type CheckoutGate={inventory:boolean;wallet:boolean;quotes:boolean;canPrepare:boolean;reason:string};
 export function checkoutGate(plan:CheckoutPlan,walletReady:boolean,feedLive:boolean,
  quotes:Record<string,QuotePreview|undefined>,now:number):CheckoutGate{
  const inventory=plan.legs.length>0&&plan.issues.length===0&&feedLive;
  const quoteReady=inventory&&plan.legs.every(x=>quoteState(x,quotes[x.ticker],now)==='REVIEWED');
- return {inventory,wallet:walletReady,quotes:quoteReady,issuerEligibility:false,executionSafety:false,canSubmit:false,
- reason:EXECUTION_HOLD_REASON};
+ const canPrepare=inventory&&walletReady&&quoteReady;
+ return {inventory,wallet:walletReady,quotes:quoteReady,canPrepare,
+  reason:canPrepare?'The basket is ready for a fresh, user-authorized purchase review.':'Complete inventory, wallet and quote checks before preparing a purchase.'};
 }
 export const planKey=(plan:CheckoutPlan,account:string|null)=>[
  account?.toLowerCase()??'',plan.totalUsd.toFixed(2),...plan.legs.map(x=>x.ticker+':'+x.platform+':'+x.contract+':'+x.amountUsd.toFixed(2))

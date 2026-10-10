@@ -6,7 +6,7 @@ import {ArrowRight,ArrowUpRight,ChevronDown,Plus,Search,ShieldCheck,Trash2} from
 import {useDesk} from '@/components/sentinel/DeskContext';
 import {TokenMark} from '@/components/sentinel/DeskBits';
 import {formatUsd,type Equity} from '@/lib/sentinel/model';
-import {checkoutPlan} from '@/lib/sentinel/product-journey';
+import {checkoutPlan,LIVE_BASKET_MAX_USD} from '@/lib/sentinel/product-journey';
 const starters=[
  {label:'THE COMPUTE STACK',stocks:['NVDA','MSFT','AMD'],description:'Chips, software and cloud infrastructure'},
  {label:'THE PLATFORMS',stocks:['AAPL','AMZN','GOOGL'],description:'Large consumer and cloud platforms'},
@@ -22,7 +22,7 @@ export default function SentinelHome(){
  const [budget,setBudget]=useState(10);
  const [search,setSearch]=useState('');
  const [catalogue,setCatalogue]=useState(false);
- useEffect(()=>{try{const n=Number(sessionStorage.getItem('sentinel-budget-v1'));if(Number.isFinite(n)&&n>=1&&n<=250)setBudget(n);}catch{/* storage optional */}},[]);
+ useEffect(()=>{try{const n=Number(sessionStorage.getItem('sentinel-budget-v1'));if(Number.isFinite(n)&&n>=1&&n<=LIVE_BASKET_MAX_USD)setBudget(n);}catch{/* storage optional */}},[]);
  useEffect(()=>{try{sessionStorage.setItem('sentinel-budget-v1',String(budget));}catch{/* storage optional */}},[budget]);
  const tokens=snapshot?.tokens??[];
  const plan=useMemo(()=>checkoutPlan(basket,tokens,budget),[basket,tokens,budget]);
@@ -34,6 +34,7 @@ export default function SentinelHome(){
    .sort((a,b)=>a.ticker.localeCompare(b.ticker)).slice(0,24);
  },[tokens,basket,search]);
  const positions=basket.map(leg=>({...leg,token:tokens.find(t=>t.ticker===leg.ticker&&t.platform===leg.platform),
+  wrappers:tokens.filter(t=>t.ticker===leg.ticker&&t.tradingAvailable===true).sort((a,b)=>a.platform.localeCompare(b.platform)),
   amount:plan.legs.find(p=>p.ticker===leg.ticker)?.amountUsd??0}));
  const applyTemplate=(tickers:string[])=>{
   reset();
@@ -45,8 +46,8 @@ export default function SentinelHome(){
    <div className="product-home-copy">
     <div className="product-kicker"><span/> SYNTHABASKET SENTINEL <i>/</i> BSC MAINNET</div>
     <h1>Your conviction.<br/><em>One basket.</em></h1>
-    <p>Choose real tokenized-stock contracts, set how you want to allocate, and let Sentinel examine the trade before you commit funds.</p>
-    <div className="product-home-steps"><span><b>01</b> Build</span><ArrowRight size={15}/><span><b>02</b> Review</span><ArrowRight size={15}/><span><b>03</b> Track</span></div>
+    <p>Construct a thematic basket, choose the issuer-backed wrapper behind each ticker, obtain live quotes, simulate against your wallet, and identify unsafe or unverifiable trades before signing.</p>
+    <div className="product-home-steps"><span><b>01</b> Build</span><ArrowRight size={15}/><span><b>02</b> Preflight</span><ArrowRight size={15}/><span><b>03</b> Purchase</span><ArrowRight size={15}/><span><b>04</b> Track</span></div>
     <p className="product-hero-trust"><ShieldCheck size={17}/> Real contracts · Live source marks · No hypothetical fills</p>
    </div>
    <div className="product-hero-feature">
@@ -72,7 +73,12 @@ export default function SentinelHome(){
      {!basket.length&&<p className="product-empty-message">Pick a theme or browse available assets. Nothing will be bought until execution is independently cleared and authorized.</p>}
      {positions.map((leg,i)=><div className="product-asset-row" key={leg.ticker}>
       <span className="product-asset-index">{String(i+1).padStart(2,'0')}</span><TokenMark token={leg.token}/>
-      <div className="product-asset-name"><strong>{leg.ticker}</strong><small>{leg.token?.company||'Issuer unavailable'} · {leg.platform==='bstock'?'bStocks':'Ondo'} · {leg.token?.symbol}</small>
+      <div className="product-asset-name"><strong>{leg.ticker}</strong><small>{leg.token?.company||'Issuer unavailable'} · {leg.token?.symbol}</small>
+       <div className="product-wrapper-picker" aria-label={'Issuer wrapper for '+leg.ticker}>{leg.wrappers.map(option=><button
+        key={option.platform} type="button" className={option.platform===leg.platform?'selected':''}
+        aria-pressed={option.platform===leg.platform} onClick={()=>addToken(option)}>
+        {option.platform==='bstock'?'bStocks':'Ondo'} <span>{option.tokenToShareRatio?option.tokenToShareRatio.toLocaleString('en-US',{maximumFractionDigits:6})+':1':'ratio n/a'}</span>
+       </button>)}</div>
        <div className="product-asset-weight"><input aria-label={'Allocation for '+leg.ticker} type="range"
         min={basket.length===1?100:5} max={basket.length===1?100:100-5*(basket.length-1)} step={1}
         value={leg.weight} disabled={basket.length===1} onChange={e=>weight(leg.ticker,Number(e.target.value))}/></div>
@@ -89,21 +95,21 @@ export default function SentinelHome(){
        <TokenMark token={t} size="small"/><span><strong>{t.ticker}</strong><small>{t.company} · {t.platform==='bstock'?'bStocks':'Ondo'}</small></span><Plus size={16}/>
       </button>):<span className="product-catalogue-empty">No additional live assets match.</span>}</div>
      </div>}
-     {basket.length>0&&<p className="product-selection-note"><ShieldCheck size={16}/> Target allocation only. Issuer ratios and execution conditions are checked in review.</p>}
+     {basket.length>0&&<p className="product-selection-note"><ShieldCheck size={16}/> Each ticker is bound to the issuer wrapper selected above. Contract, conversion ratio and execution conditions are checked again in review.</p>}
     </div>
     <aside className="product-workspace-checkout">
      <span className="product-section-label">02 / HOW MUCH?</span><h3>Set your amount.</h3>
      <label htmlFor="product-budget">TOTAL INVESTMENT / BSC USDT</label>
-     <div className="product-input-amount"><span>$</span><input id="product-budget" type="number" min={1} max={250} step=".01" value={budget}
-      onChange={e=>setBudget(Math.max(1,Math.min(250,Math.round((Number(e.target.value)||1)*100)/100)))}/></div>
-     <div className="product-budget-shortcuts">{[10,25,50,100].map(n=><button type="button" className={budget===n?'chosen':''} onClick={()=>setBudget(n)} key={n}>{'$'+n}</button>)}</div>
+     <div className="product-input-amount"><span>$</span><input id="product-budget" type="number" min={1} max={LIVE_BASKET_MAX_USD} step=".01" value={budget}
+      onChange={e=>setBudget(Math.max(1,Math.min(LIVE_BASKET_MAX_USD,Math.round((Number(e.target.value)||1)*100)/100)))}/></div>
+     <div className="product-budget-shortcuts">{[5,10,15,25].map(n=><button type="button" className={budget===n?'chosen':''} onClick={()=>setBudget(n)} key={n}>{'$'+n}</button>)}</div>
      <div className="product-order-stat"><span>Basket assets</span><b>{basket.length}</b></div>
      <div className="product-order-stat"><span>Allocated</span><b>{basket.reduce((n,x)=>n+x.weight,0)}%</b></div>
      <div className="product-order-stat"><span>Proposed input</span><b>{formatUsd(plan.totalUsd)} USDT</b></div>
      {plan.issues.length>0&&basket.length>0&&<div className="product-issue">{plan.issues[0]}</div>}
      <button type="button" className="product-main-cta" disabled={feed!=='live'||plan.issues.length>0||plan.legs.length===0} onClick={()=>router.push('/sentinel/invest')}>
       Review investment <ArrowRight size={19}/></button>
-     <small className="product-checkout-note">Review never submits a transaction. Live purchasing remains unavailable until our execution safety checks are independently cleared.</small>
+     <small className="product-checkout-note">Review is read-only. A purchase starts only after you choose an execution route and explicitly authorize the exact live action.</small>
     </aside>
    </div>
   </section>

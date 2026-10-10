@@ -7,7 +7,7 @@ const token='0x3333333333333333333333333333333333333333';
 const hash='0x'+'a'.repeat(64);
 const expected:ExpectedChainTransaction={hash,sender:wallet,target:router,kind:'swap',ticker:'NVDA',platform:'bstock',tokenContract:token};
 const receipt=(status='MINED_SUCCESS')=>({kind:'sentinel.bsc.tx-receipt',chainId:56,hash,
- status,blockNumber:'0x1dcd650'});
+ status,blockNumber:'0x1dcd650',calldataMatched:true});
 const settlement=()=>({kind:'sentinel.bsc.settlement',chainId:56,hash,
  status:'TRANSFER_EVIDENCE_VERIFIED',confirmations:'4',issuerToken:token,
  stateBalances:{status:'VERIFIED',usdtNetDecrease:'1000000000000000000',issuerNetIncrease:'100000000000000'},
@@ -44,13 +44,13 @@ test('missing or wrong chain/hash, unexpected token, insufficient finality and f
   assert.equal(verdict.filledPurchaseConfirmed,false);
  }
 });
-test('valid receipt AND issuer logs AND historical state remain transfer evidence only, not authenticated fill',()=>{
+test('exact reviewed calldata plus receipt, issuer logs and historical state verify token delivery',()=>{
  const result=reconcileTransaction(expected,receipt(),settlement());
- assert.equal(result.status,'TRANSFER_EVIDENCE_ONLY');
+ assert.equal(result.status,'PURCHASE_VERIFIED');
  assert.equal(result.receiptVerified,true);
  assert.equal(result.transferEvidenceVerified,true);
- assert.equal(result.filledPurchaseConfirmed,false);
- assert.equal(result.canProceedToNextSpend,false);
+ assert.equal(result.filledPurchaseConfirmed,true);
+ assert.equal(result.canProceedToNextSpend,true);
 });
 test('basket cannot advance over missing legs, duplicate receipts or partially observed positions',()=>{
  const second={...expected,hash:'0x'+'c'.repeat(64),ticker:'AMD',platform:'ondo' as const};
@@ -62,6 +62,6 @@ test('basket cannot advance over missing legs, duplicate receipts or partially o
  const partial=reconcileBasketTransactions([expected,second],[result,{...result,hash:second.hash,status:'PENDING',transferEvidenceVerified:false}]);
  assert.equal(partial.state,'PARTIAL_OBSERVATION');assert.equal(partial.safeToAdvanceAutomatically,false);
  const full=reconcileBasketTransactions([expected,second],[result,{...result,hash:second.hash}]);
- assert.equal(full.state,'TRANSFERS_OBSERVED_ONLY');
- assert.equal(full.filledPurchaseConfirmed,false);
+ assert.equal(full.state,'PURCHASES_VERIFIED');
+ assert.equal(full.filledPurchaseConfirmed,true);
 });

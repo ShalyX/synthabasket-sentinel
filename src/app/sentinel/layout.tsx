@@ -4,6 +4,6 @@ import './desk.css';
 import './product.css';
 export const metadata:Metadata={
  title:{default:'Sentinel — Tokenized Stock Basket Agent',template:'%s | Sentinel'},
- description:'Discover issuer-backed tokenized stocks, build a basket, review live execution checks and observe actual BSC positions. No real purchase is enabled without independently cleared execution safety and user approval.',
+ description:'Build issuer-aware tokenized-stock baskets, review live BSC quotes and simulations, authorize purchases through browser or Agentic Wallet, and verify settlement.',
 };
 export default function SentinelLayout({children}:{children:React.ReactNode}){return <DeskApp>{children}</DeskApp>;}

@@ -287,9 +287,9 @@ export default function ExecutionLab(){
       ['03 / WALLET SESSION',addressOK?'CONNECTED BSC':'NOT READY',addressOK?'Connected sender on chain 56; no signing requested.':'Connect the intended BSC wallet to simulate.'],
       ['04 / ROUTE & SIMULATOR',complete?'PREDICTED PASS':blocked?'BLOCKED':expired?'EXPIRED':'NOT VERIFIED',blocked?scopedObservations.find(x=>x.status==='blocked')?.reason||'The simulator rejected a leg.':complete?'All legs returned predicted success, but no onchain execution occurred.':'Trigger quote, unsigned build and simulation on each leg.'],
       ['05 / FUNDS & ALLOWANCES',!currentBalanceCheck?'NOT VERIFIED':currentBalanceCheck.usdtCoversAmount&&currentBalanceCheck.bnbCoversBufferedSwapEstimate===true?'OBSERVED SUFFICIENT':'NOT CLEARED',!currentBalanceCheck?'No onchain funding diagnostic has been completed.':currentBalanceCheck.usdtCoversAmount?'Observed public balances are not approval or eligibility.':'USDT is below the proposed basket amount.'],
-      ['06 / ISSUER ELIGIBILITY','UNVERIFIED','No authoritative end-user, product, jurisdiction and wallet trading clearance.'],
-      ['07 / SWAP IMPLEMENTATION','UNVERIFIED','Nested LiquidMesh calldata and upgrade authorization remain unaudited.'],
-      ['08 / FINAL RELEASE','LOCKED','No wallet approvals, live swaps, filled orders or receipts may be claimed.']
+      ['06 / ISSUER ELIGIBILITY','USER ATTESTATION REQUIRED','Sentinel does not infer eligibility from inventory, location or wallet connection.'],
+      ['07 / SWAP IMPLEMENTATION','PROVIDER TRUST REQUIRED','Binance builds the route; Sentinel pins its outer facts while nested LiquidMesh calls remain independently undecoded.'],
+      ['08 / FINAL RELEASE','EXPLICIT AUTHORIZATION','Every exact approval and swap requires a fresh review and separate wallet confirmation.']
      ] as const).map(check=><div className="desk-execution-check" key={check[0]}>
       <span>{check[0]}</span><div><b>{check[1]}</b><small>{check[2]}</small></div>
      </div>)}
@@ -385,7 +385,7 @@ export default function ExecutionLab(){
     {!issue&&<p className="desk-sim-note">Separate quote/build/simulate calls per leg. Nothing signs, approves or broadcasts. A blocked leg halts the batch.</p>}
     <ExecutionAuthorization legs={legs.map(x=>({ticker:x.ticker,platform:x.platform,amountUsd:x.amountUsd}))}
      enabled={!running&&addressOK&&budgetOK&&feed==='live'} operationKey={operationKey}/>
-    <div className="desk-sim-security"><LockKeyhole size={20}/><div><b>Actual spending is gated.</b><p>Simulations do not prove you hold the tokens, that allowances exist, or that the issuer permits you to trade. Mainnet spending remains hard-blocked until the nested router ABI and issuer-specific end-user eligibility are independently verified. A passing simulation, funded wallet, or configured allowlist cannot bypass either blocker.</p></div></div>
+    <div className="desk-sim-security"><LockKeyhole size={20}/><div><b>Actual spending stays user-gated.</b><p>Simulation does not authorize a trade. Direct signing requires explicit eligibility and provider-route acknowledgement, configured target/spender/selector allowlists, an exact-size approval, a fresh wallet confirmation, and matching post-trade calldata and delivery evidence.</p></div></div>
     <Link href="/sentinel/review" className="desk-sim-back"><ArrowLeft size={14}/> Return to quote review</Link>
    </aside>
   </div>

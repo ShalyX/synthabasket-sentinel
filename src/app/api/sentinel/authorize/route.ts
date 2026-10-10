@@ -2,7 +2,7 @@ import {NextRequest,NextResponse} from 'next/server';
 import {assessPreview} from '@/lib/sentinel/policy';
 import {parseSimulationIntent,eligibleToSimulate,rawUsdtAmount,selectRouteForSimulation,checkSwapBuild,assessSimulation,SIMULATION_MAX_IMPACT_PERCENT,SIMULATION_SLIPPAGE_PERCENT} from '@/lib/sentinel/execution-preflight';
 import {evaluateLiveSpend,exactApprovalCalldata,parseTrustedTargets,parseTrustedSelectors} from '@/lib/sentinel/execution-authorization';
-import {inspectBuildMinimum,verifyKnownRouterSemantics} from '@/lib/sentinel/route-audit';
+import {acceptAuthenticatedProviderBuild,inspectBuildMinimum} from '@/lib/sentinel/route-audit';
 import {assessIssuerTradingEligibility} from '@/lib/sentinel/issuer-eligibility';
 import {getSentinelMarkets,binanceGet,binanceSimulateEvmTx,BSC_USDT,UpstreamError} from '@/lib/sentinel/server';
 
@@ -25,14 +25,25 @@ async function rpc(method:string,params:unknown[],id:number):Promise<bigint>{
 export async function POST(req:NextRequest){
  const ip=(req.headers.get('x-real-ip')||req.headers.get('x-forwarded-for')?.split(',')[0]||'unknown').slice(0,80);
  const now=Date.now(),old=limits.get(ip);
- if(old&&old.until>now&&old.count>=4)return reply({error:'Authorization previews are rate limited; try again shortly.'},429);
+ // Four legs may each require one exact approval review and one fresh swap
+ // review. Keep room for that deliberate sequence plus a small retry margin.
+ if(old&&old.until>now&&old.count>=12)return reply({error:'Authorization previews are rate limited; try again shortly.'},429);
  limits.set(ip,old&&old.until>now?{count:old.count+1,until:old.until}:{count:1,until:now+60000});
  if(limits.size>500)limits.clear();
  let raw:unknown;
  try{
   const body=await req.text();if(body.length>1000)throw Error();raw=JSON.parse(body);
  }catch{return reply({error:'Invalid execution preview request.'},400);}
- const parsed=parseSimulationIntent(raw);
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return reply({error:'Invalid execution preview request.'},400);
+ const fields=raw as Record<string,unknown>;
+ if(Object.keys(fields).some(k=>!['ticker','platform','amountUsd','walletAddress','attestations'].includes(k))||
+  !fields.attestations||typeof fields.attestations!=='object'||Array.isArray(fields.attestations))
+  return reply({error:'Fresh eligibility and provider-route attestations are required.'},400);
+ const attestations=fields.attestations as Record<string,unknown>;
+ if(Object.keys(attestations).some(k=>!['issuerEligibility','providerRouteTrust'].includes(k))||
+  attestations.issuerEligibility!==true||attestations.providerRouteTrust!==true)
+  return reply({error:'Confirm both issuer eligibility and the authenticated provider-built route trust model.'},400);
+ const parsed=parseSimulationIntent({ticker:fields.ticker,platform:fields.platform,amountUsd:fields.amountUsd,walletAddress:fields.walletAddress});
  if(!parsed.ok)return reply({error:parsed.message},400);
  // Operator-reviewed router AND spender. Missing configuration prevents signatures.
  const routers=parseTrustedTargets(process.env.SENTINEL_ALLOWED_SWAP_TARGETS);
@@ -47,7 +58,7 @@ export async function POST(req:NextRequest){
   if(!token)return reply({error:'No issuer contract in signed BSC inventory.',phase:'BLOCKED'},404);
   const eligible=eligibleToSimulate(token);
   if(!eligible.ok)return reply({error:eligible.message,phase:'BLOCKED'},409);
-  const issuerPermission=assessIssuerTradingEligibility(token.platform);
+  const issuerPermission=assessIssuerTradingEligibility(token.platform,attestations.issuerEligibility===true);
   if(!issuerPermission.canTrade)return reply({error:issuerPermission.reason,phase:'BLOCKED',eligibility:issuerPermission},451);
   const amount=rawUsdtAmount(intent.amountUsd);
   const q={binanceChainId:'56',amount,fromTokenAddress:BSC_USDT,toTokenAddress:token.address,userWalletAddress:intent.walletAddress};
@@ -66,12 +77,12 @@ export async function POST(req:NextRequest){
   const tx=checked.value;
   const minOut=inspectBuildMinimum(built,route.toTokenAmount);
   if(!minOut.ok)return reply({phase:'BLOCKED',error:minOut.message},409);
-  const decoded=verifyKnownRouterSemantics(tx,{
+  const routeAcceptance=acceptAuthenticatedProviderBuild(tx,{
    inputToken:BSC_USDT,outputToken:token.address,sender:intent.walletAddress,
    recipient:intent.walletAddress,inputAmountRaw:amount,minOutputRaw:minOut.value.minReceiveRaw,
    deadline:openedAt+30000
-  });
-  if(!decoded.ok)return reply({phase:'BLOCKED',error:decoded.message},409);
+  },{authenticatedBinanceResponse:true,userAcceptedProviderTrust:attestations.providerRouteTrust===true});
+  if(!routeAcceptance.ok)return reply({phase:'BLOCKED',error:routeAcceptance.message},409);
   if(!route.approveTarget||!routers.has(tx.to.toLowerCase())||!spenders.has(route.approveTarget.toLowerCase())||
      !selectors.has(tx.data.slice(0,10).toLowerCase()))
    return reply({error:'Router and quote-defined spender have not both been independently approved for execution.',phase:'BLOCKED'},409);
@@ -95,7 +106,8 @@ export async function POST(req:NextRequest){
    tokenContract:token.address,amountUsd:intent.amountUsd,amountRaw:decision.amountRaw,
    sender:intent.walletAddress,to:tx.to,spender:route.approveTarget,
    slippagePercent:Number(SIMULATION_SLIPPAGE_PERCENT),priceImpactPercent:route.priceImpactPercent,
-   expiresAt:new Date(expiresAt).toISOString(),simulatorPassed:simulatedPass,noAutomaticOrders:true};
+   expiresAt:new Date(expiresAt).toISOString(),simulatorPassed:simulatedPass,noAutomaticOrders:true,
+   eligibility:issuerPermission,routeTrust:routeAcceptance.value.trustModel,independentlyDecoded:false};
   if(decision.phase==='APPROVAL_REQUIRED')
    return reply({...common,approval:{to:BSC_USDT,data:exactApprovalCalldata(route.approveTarget,intent.amountUsd),value:'0x0'}});
   if(decision.phase==='SWAP_READY')
