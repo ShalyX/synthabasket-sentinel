@@ -54,6 +54,13 @@ test('observed 10-word LiquidMesh envelope can match amounts but never authorize
  const changedOpaque=data.slice(0,-2)+'22';
  assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:changedOpaque},expected).ok,true);
  assert.equal(verifyKnownRouterSemantics({...tx,data:changedOpaque},expected).ok,false);
+ // A different recipient or a different opaque control address STILL passes
+ // the 10-word shape, so this parser cannot authorize spending.
+ assert.equal(inspectObservedLiquidMeshCalldata(tx,{...expected,recipient:token}).ok,true);
+ assert.equal(verifyKnownRouterSemantics(tx,{...expected,recipient:token}).ok,false);
+ const otherControlChanged='0xad43f73d'+data.slice(10,10+64*7)+addr(token)+data.slice(10+64*8);
+ assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:otherControlChanged},expected).ok,true);
+ assert.equal(verifyKnownRouterSemantics({...tx,data:otherControlChanged},expected).ok,false);
  assert.equal(inspectObservedLiquidMeshCalldata(tx,{...expected,inputAmountRaw:'2'}).ok,false);
  assert.equal(inspectObservedLiquidMeshCalldata(tx,{...expected,outputToken:wallet}).ok,false);
  assert.equal(inspectObservedLiquidMeshCalldata(tx,{...expected,minOutputRaw:'900'}).ok,false);
