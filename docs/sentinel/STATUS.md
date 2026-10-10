@@ -1,6 +1,17 @@
 # SynthaBasket Sentinel — Standalone Project Status
 
-**October 8, 2026.** This is the independent BNB Chain Sentinel application, not the original STOCKLANA Solana index protocol.
+## October 10, 2026 production release
+
+- PR #3 restored the issuer-aware purchase routes, passed CI, merged to `main` and deployed successfully to https://synthabasket-sentinel.vercel.app.
+- The production server has the explicitly reviewed browser-execution router, spender and selector allowlists. An unsigned $1 NVDAB production probe returned exact-size `APPROVAL_REQUIRED` calldata.
+- The owner completed the browser-wallet smoke flow and reported terminal Sentinel state `PURCHASE_VERIFIED` after the exact-size approval, swap and settlement checks.
+- The owner separately paired the deployed Agentic page with the loopback bridge, obtained a fresh funded one-leg $1 NVDAB live preview, explicitly executed it and reported terminal states `SETTLED_VERIFIED` and `FINISHED`.
+- These transaction results are owner-confirmed. No private wallet session, pairing secret, raw balance or signing material was collected. A multi-leg live Agentic basket remains unverified.
+- Remaining non-product work: final video, submission and the user's personal DevEx report.
+
+## October 8, 2026 extraction and read-only evidence
+
+This is the independent BNB Chain Sentinel application, not the original STOCKLANA Solana index protocol.
 
 - **GitHub:** https://github.com/ShalyX/synthabasket-sentinel — `main`, independent root commit `743e938`, with no inherited STOCKLANA Git ancestry.
 - **Vercel:** https://synthabasket-sentinel.vercel.app — independent project `synthabasket-sentinel` linked to this repository; all five research views deployed.
@@ -13,4 +24,4 @@
 - **Market feed:** **VERIFIED LIVE** October 8. New Sentinel production in `sin1` returned HTTP **200** from the signed BSC Binance Web3 RWA inventory route, reporting **488 token contracts / 448 tickers**. A real Chrome browser session verified the Market Index state `Feed connected`, 488 contracts, and 448 tickers. Historical US preview `40304` remains documented; today's success is connectivity evidence, not formal regulatory/hosting authorization.
 - **Singapore:** Both read-only Sentinel data and venue quote functions ran in Singapore `sin1`, independently confirmed by deployment metadata and actual `x-vercel-id` response headers `cdg1::sin1::…`. The region is also pinned in standalone `vercel.json` for durable deployment. No VPN, proxy, US region fallback or wallet execution was involved.
 
-**Next priorities:** final UI QA on the now-working Singapore quote flow; document Binance hosting/jurisdiction requirements separately; finish judge-facing demo and the user's self-authored developer-experience report. The **Binance Web3 aggregator** quote has succeeded in Singapore; **An owner-operated Agentic Wallet CLI quote has now returned a sanitized local observation; a live simultaneous two-source comparison remains incomplete**, and no execution, signing, approval or autonomous Agent Studio action is claimed.
+The historical October 8 evidence above predates the October 10 product release and live owner-confirmed smoke tests. It remains useful as a record of the earlier read-only milestone and must not be read as the current execution status.

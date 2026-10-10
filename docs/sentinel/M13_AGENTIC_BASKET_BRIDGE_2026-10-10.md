@@ -1,6 +1,6 @@
 # M13 — SynthaBasket Sentinel / Binance Agentic Wallet bridge
 
-**2026-10-10 — implementation built; live basket execution initiated from Sentinel NOT YET verified.** The successful October 10 NVDAB trade was initiated manually using Binance CLI, not by Sentinel.
+**2026-10-10 — implementation built and owner-confirmed production smoke test completed.** The earlier successful October 10 NVDAB trade was initiated manually using Binance CLI. A later, separate one-leg $1 NVDAB test was initiated from the deployed Sentinel UI through the live-enabled local bridge; the owner reported terminal leg state `SETTLED_VERIFIED` and basket phase `FINISHED`.
 
 ## User experience
 
@@ -47,7 +47,7 @@ This generates a new secret. The user must still request fresh quotes, explicitl
 
 Verified: Python/Node/TypeScript logic and guard tests, Next production build, CORS allowed origin, wrong-origin 403, unauthenticated 401, read-only bridge startup and health. Previously, a manually submitted $1 NVDAB Binance Agentic Wallet purchase reached real BSC settlement; M12 documents the transaction and the raw-token/share-equivalent distinction.
 
-Unverified as of this commit: live multi-leg spending initiated from the deployed Sentinel UI, browser loopback interaction on the deployed site, and full Binance wallet order reconciling through this new bridge on a real purchase. These must not be claimed as passing until a user-approved production browser-wallet run occurs. The custom LiquidMesh direct-signer remains locked.
+Owner-confirmed on October 10: deployed-site browser loopback pairing, fresh inventory/quote/funding preflight, explicit live execution and full Binance wallet order reconciliation for one $1 NVDAB leg. The deployed UI reported `SETTLED_VERIFIED` and `FINISHED`. This does not yet prove a live multi-leg basket, and no private pairing/session material was collected. The result remains labelled owner-confirmed unless its public transaction hash is recorded and independently checked.
 
 **Important prior findings:** the manual NVDAB trade showed different Binance submit/order-list IDs; this is why the bridge requires an unambiguous matched transaction or stops. Binance Wallet may approve virtually unlimited USDT spend to its on-chain wallet spender. The new UI warns this can happen; review and revoke unnecessary approvals separately in Binance Wallet. Vendor token-security audit data was unavailable for NVDAB. A quote is not a legal trading-eligibility attestation.
 
@@ -60,4 +60,4 @@ Unverified as of this commit: live multi-leg spending initiated from the deploye
 
 Read-only loopback probe: GET /health with Origin https://synthabasket-sentinel.vercel.app should respond 200, tradingEnabled false by default; arbitrary Origin should be rejected 403; GET /state without private Authorization should be rejected 401.
 
-Full end-to-end status remains **PENDING USER-INITIATED LIVE BASKET TEST**. Do not fake this status.
+One-leg end-to-end status is **OWNER CONFIRMED IN PRODUCTION**. Multi-leg live execution remains unverified. Do not broaden the one-leg result into a claim of unattended or multi-leg execution.
