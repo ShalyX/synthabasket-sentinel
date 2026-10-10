@@ -21,7 +21,7 @@ In PowerShell on the connected Windows PC, inside C:\Users\USER\sentinel-m4-work
 
     npm run bridge:baw
 
-This is **read-only by default**. It prints a random pairing secret in that PC's terminal. On the same PC open https://synthabasket-sentinel.vercel.app/sentinel/agent, paste the secret there, and pair. Refresh that page after starting the local bridge. Never share a pairing secret with anyone, including chat.
+This is **read-only by default**. It prints a random pairing secret in that PC's terminal. On the same PC open https://synthabasket-sentinel.vercel.app/sentinel/agent, paste the secret there, and pair. Refresh that page after starting the local bridge. **Chrome 142+ asks for Apps on device / Loopback network permission for a public HTTPS site contacting localhost.** If the page still reports that the bridge is inaccessible, click its Check local bridge button; accept the browser's access prompt. If it was previously denied, open Chrome Site settings for https://synthabasket-sentinel.vercel.app and set Apps on device / Loopback network to Allow. No permission bypass or browser security flag is required. Never share a pairing secret with anyone, including chat.
 
 To deliberately allow real mainnet spending, stop the read-only process and start a **new** bridge process:
 

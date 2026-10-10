@@ -22,6 +22,7 @@ export default function AgenticExecution(){
  const [budget,setBudget]=useState(10);
  const [secret,setSecret]=useState('');
  const [health,setHealth]=useState<Health|null>(null);
+ const [bridgeMessage,setBridgeMessage]=useState('');
  const [paired,setPaired]=useState(false);
  const [run,setRun]=useState<Run|null>(null);
  const [busy,setBusy]=useState(false);
@@ -35,15 +36,23 @@ export default function AgenticExecution(){
   if(!/^[a-f0-9]{64}$/i.test(secret))throw Error('Enter the 64-character secret printed in your local bridge terminal.');
   const response=await fetch(ENDPOINT+route,{method,headers:{
    Authorization:'Bearer '+secret,...(body?{'Content-Type':'application/json'}:{})},
-   ...(body?{body:JSON.stringify(body)}:{}),cache:'no-store',signal:AbortSignal.timeout(timeout)});
+   ...(body?{body:JSON.stringify(body)}:{}),cache:'no-store',signal:AbortSignal.timeout(timeout),
+   targetAddressSpace:'loopback'} as RequestInit);
   const result=await response.json();
   if(!response.ok)throw Error(result.error||'Local Binance wallet operation failed.');
   return result as Run;
  };
- useEffect(()=>{
-  fetch(ENDPOINT+'/health',{cache:'no-store',signal:AbortSignal.timeout(4500)})
-   .then(async r=>{if(!r.ok)throw Error();setHealth(await r.json());}).catch(()=>setHealth(null));
- },[]);
+ const discover=()=>{
+  // Chrome 142+ requires site permission to reach apps on the same computer.
+  // Trigger this from the explicit retry button to allow the browser's native prompt.
+  setBridgeMessage('');
+  fetch(ENDPOINT+'/health',{cache:'no-store',signal:AbortSignal.timeout(7000),
+   targetAddressSpace:'loopback'} as RequestInit)
+   .then(async r=>{if(!r.ok)throw Error();setHealth(await r.json());setBridgeMessage('');})
+   .catch(()=>{setHealth(null);setBridgeMessage('Chrome requires permission to reach services on your own PC. In Chrome, open site settings for this page, set Apps on device (Loopback network) to Allow, then retry.');});
+ };
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ useEffect(()=>{discover();},[]);
  useEffect(()=>{
   if(!paired||!run||!active(run.phase))return;
   const id=window.setInterval(()=>{
@@ -88,7 +97,8 @@ export default function AgenticExecution(){
    <section className="desk-baw-panel">
     <span className="desk-baw-step">01 / PAIR YOUR LOCAL WALLET</span><h2>Connect the bridge.</h2>
     <p>Run <code>npm run bridge:baw</code> on this PC. Enter the secret printed by that process. It is sent only to <code>127.0.0.1</code>—never to Vercel. The separate local bridge must be explicitly enabled for real spending.</p>
-    <p className="desk-baw-state">{health?'LOCAL BRIDGE DETECTED · '+(health.tradingEnabled?'LIVE TRADING ENABLED':'QUOTE-ONLY MODE'):'BRIDGE OFFLINE · START IT ON YOUR PC'}</p>
+    <p className="desk-baw-state">{health?'LOCAL BRIDGE DETECTED · '+(health.tradingEnabled?'LIVE TRADING ENABLED':'QUOTE-ONLY MODE'):'LOCAL BRIDGE NOT ACCESSIBLE YET'}</p>
+    {!health&&<p className="desk-baw-note">{bridgeMessage||'Start the local process. Chrome may show an Apps on device permission prompt.'} <button type="button" className="desk-baw-retry" onClick={discover}>Check local bridge / request browser access <RefreshCw size={14}/></button></p>}
     <div className="desk-baw-pair"><input type="password" aria-label="Local bridge secret" spellCheck={false} autoComplete="off" placeholder="64-character local pairing secret" value={secret} onChange={e=>{setSecret(e.target.value.trim());setPaired(false);setRun(null);}}/>
      <button type="button" disabled={busy||!health} onClick={connect}>{paired?'Refresh':'Pair bridge'} <ArrowRight size={15}/></button></div>
     {paired&&<p className="desk-baw-valid"><CheckCircle2 size={16}/> Authenticated locally. No wallet credentials were sent to the hosted app.</p>}
