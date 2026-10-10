@@ -25,7 +25,7 @@ export function WalletControls(){
   </button>
   {open&&<section className="desk-wallet-menu" aria-label="Wallet connection controls">
    <div className="desk-wallet-menu-title"><strong>WALLET / BSC MAINNET</strong>
-    <small>Connect for simulation; live wallet actions require a separate explicit confirmation and operator enablement.</small></div>
+    <small>Connect to check funds and buy. Every transaction still requires your approval.</small></div>
    {wallet.address?<div className="desk-wallet-current">
     <div className="desk-wallet-current-top"><ShieldCheck size={17}/>
      <div><strong>{wallet.label||'Connected wallet'}</strong><small>{shortAddress(wallet.address)}</small></div>
@@ -40,12 +40,12 @@ export function WalletControls(){
    </div>:<div className="desk-wallet-choices">
     {wallet.choices.length===0?<p>No injected browser wallet detected. Install or enable a compatible EVM wallet in this browser, then reopen this menu.</p>:
      wallet.choices.map(choice=><button type="button" key={choice.id} disabled={wallet.busy}
-      onClick={()=>void wallet.connect(choice.id)}>
+      onClick={()=>void wallet.connect(choice.id).then(()=>setOpen(false))}>
       <Wallet size={17}/><span>{choice.name}</span><span>{wallet.busy?'…':'Connect →'}</span>
      </button>)}
    </div>}
    {wallet.error&&<p className="desk-wallet-error" role="alert"><AlertCircle size={14}/>{wallet.error}</p>}
-   <p className="desk-wallet-disclaimer">Market research stays open without a wallet. No automatic signatures. Live actions are disabled until separately enabled and explicitly approved in your wallet.</p>
+   <p className="desk-wallet-disclaimer">Sentinel automates read-only checks, never signatures. You approve every on-chain action in your wallet.</p>
   </section>}
  </div>;
 }
