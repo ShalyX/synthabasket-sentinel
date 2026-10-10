@@ -32,6 +32,8 @@ export default function AgenticExecution(){
  const plan=useMemo(()=>buildBridgePlan(basket,snapshot?.tokens??[],budget),[basket,snapshot,budget]);
  const planKey=basket.map(x=>x.ticker+':'+x.platform+':'+x.weight).join('|')+'|'+budget;
  const [reviewedKey,setReviewedKey]=useState('');
+ useEffect(()=>{try{const n=Number(sessionStorage.getItem('sentinel-budget-v1'));if(Number.isFinite(n)&&n>=1&&n<=25)setBudget(n);}catch{/* storage optional */}},[]);
+ useEffect(()=>{try{sessionStorage.setItem('sentinel-budget-v1',String(budget));}catch{/* storage optional */}},[budget]);
  const ask=async(route:string,method:'GET'|'POST'='GET',body?:unknown,timeout=115000):Promise<Run>=>{
   if(!/^[a-f0-9]{64}$/i.test(secret))throw Error('Enter the 64-character secret printed in your local bridge terminal.');
   const response=await fetch(ENDPOINT+route,{method,headers:{
@@ -86,7 +88,7 @@ export default function AgenticExecution(){
  const unknown=run&&['RECOVERY_REQUIRED','RECONCILIATION_INCOMPLETE','PARTIAL'].includes(run.phase);
  const quoteReady=run?.phase==='PREVIEW_READY'&&reviewedKey===planKey&&Date.now()<Date.parse(run.expiresAt||'');
  return <div className="desk-wrap desk-internal-page desk-baw">
-  <div className="desk-breadcrumb"><Link href="/sentinel/baskets">BASKET STUDIO</Link><span>→</span><Link href="/sentinel/review">EXECUTION REVIEW</Link><span>→</span><b>AGENTIC EXECUTION</b></div>
+  <div className="desk-breadcrumb"><Link href="/sentinel#build">BUILD</Link><span>→</span><Link href="/sentinel/invest">REVIEW & INVEST</Link><span>→</span><b>AGENTIC WALLET PURCHASE</b></div>
   <header className="desk-page-head desk-baw-hero"><div>
    <Eyebrow>ROOM 07 / BINANCE AGENTIC WALLET</Eyebrow>
    <h1>One basket.<br/><em>Actual delivery.</em></h1>
@@ -111,7 +113,7 @@ export default function AgenticExecution(){
      const token=snapshot?.tokens.find(x=>x.ticker===leg.ticker&&x.platform===leg.platform);
      return <div className="desk-baw-leg" key={leg.address}><span>{String(i+1).padStart(2,'0')}</span><TokenMark token={token}/>
        <div><strong>{leg.ticker}</strong><small>{leg.symbol} · bStocks</small><code>{leg.address}</code></div><b>{formatUsd(leg.amountUsd)}</b></div>;
-    }):<p className="desk-baw-error"><ShieldAlert size={16}/>{plan.reason} <Link href="/sentinel/baskets">Edit basket →</Link></p>}
+    }):<p className="desk-baw-error"><ShieldAlert size={16}/>{plan.reason} <Link href="/sentinel#build">Edit basket →</Link></p>}
     <button className="desk-baw-preview" type="button" disabled={!paired||busy||!plan.ok||feed!=='live'||!!run&&active(run.phase)||!!unknown} onClick={preview}><RefreshCw size={16}/> Request wallet preflight and fresh quotes</button>
     <p className="desk-baw-note">Read-only preview checks issuer inventory, wallet status, balances and each official quote. No trades or approvals occur at this stage.</p>
    </section>
@@ -149,8 +151,8 @@ export default function AgenticExecution(){
    <div><b>02 / TRANSACT</b><p>One BSC stock leg at a time, with fresh wallet quotes and a durable journal before every submission.</p></div>
    <div><b>03 / RECOVER</b><p>No retries when Binance order IDs differ, submissions time out or transaction status remains uncertain.</p></div>
    <div><b>04 / VERIFY</b><p>Only Binance FINISHED orders and two independently agreeing BSC transaction receipts advance the agent.</p></div>
-   <Link href="/sentinel/baskets">Adjust basket <ArrowRight size={14}/></Link>
-   <Link href="/sentinel/watch">Portfolio Watch <ArrowRight size={14}/></Link>
+   <Link href="/sentinel#build">Adjust basket <ArrowRight size={14}/></Link>
+   <Link href="/sentinel/portfolio">Portfolio <ArrowRight size={14}/></Link>
   </aside></div>
  </div>;
 }

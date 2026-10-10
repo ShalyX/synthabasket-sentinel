@@ -24,45 +24,45 @@ export default function GuidedDemo(){
   {number:'01',phase:'DISCOVER',name:'Know the issuer, not just the ticker.',status:live?'SOURCE LIVE':'SOURCE UNAVAILABLE',tone:live?'ready':'wait',
    copy:'Read actual BSC token contracts, wrapper conversion ratios and provider marks. A displayed mark is not an executable quote.',
    evidence:live?String(snapshot.count)+' contracts / '+snapshot.tickers+' tickers · '+(snapshot.source==='first-party-production-readonly'?'first-party read-only relay':'server-authenticated Binance inventory'):'The app never supplies substitute market data.',
-   href:'/sentinel/markets/NVDA',cta:'Inspect two NVIDIA wrappers'},
+   href:'/sentinel#build',cta:'Choose an issuer wrapper'},
   {number:'02',phase:'CONSTRUCT',name:'Give the thesis an exact weight.',status:basketReady?'TARGET DEFINED':'NEEDS BASKET',tone:basketReady?'ready':'wait',
    copy:'Choose issuer contracts and allocation weights that total 100%. This is a local target, not a token purchase or deposit.',
    evidence:basketReady?basket.map(x=>x.ticker+' '+x.weight+'% / '+(x.platform==='bstock'?'bStocks':'Ondo')).join(' · '):'No allocation has been confirmed in this browser.',
-   href:'/sentinel/baskets',cta:'Open Basket Studio'},
+   href:'/sentinel#build',cta:'Edit the primary basket'},
   {number:'03',phase:'PRICE & REVIEW',name:'Question every proposed leg.',status:'REQUEST FRESH QUOTES',tone:'wait',
    copy:'User-triggered calls check the venue, impact, basis and quote freshness. Pretrade review is not a filled order or legal eligibility determination.',
    evidence:'Live quote proof appears on Execution Review only after a fresh request. We do not replay historical prices as live.',
-   href:'/sentinel/review',cta:'Request live venue quotes'},
+   href:'/sentinel/invest',cta:'Request live venue quotes'},
   {number:'04',phase:'QUOTE → BUILD → SIMULATE',name:'Rehearse the actual calldata.',status:simulation?simulation.state.replaceAll('_',' '):'NOT RUN THIS SESSION',tone:simulation?.state==='SIMULATOR_PASSED'?'ready':simulation?'blocked':'wait',
    copy:'Each leg gets a real unsigned BSC swap build and Transaction API simulation. The first blocked leg stops the sequence.',
    evidence:simulation?simulation.observedLegs+'/'+simulation.totalLegs+' legs · '+simulation.summary:'No simulation result has been collected for this wallet and basket in this browser session.',
-   href:'/sentinel/execute',cta:'Build and simulate basket'},
-  {number:'05',phase:'PERMISSION TO SPEND',name:'The agent must be able to stop.',status:'EXECUTION LOCKED',tone:'blocked',
-   copy:'Vendor swap internals, upgrade controls, and issuer-specific user eligibility remain unverified. Wallet approvals and live spending are disabled.',
-   evidence:'Neither an issuer quote nor a PASS simulation is a purchase. There is no authorized trade or mined delivery receipt.',
-   href:'/sentinel/execute',cta:'Inspect the safety gates'},
+   href:'/sentinel/invest#preflight',cta:'Build and simulate basket'},
+  {number:'05',phase:'PERMISSION TO SPEND',name:'The agent must be able to stop.',status:'USER AUTHORIZATION REQUIRED',tone:'wait',
+   copy:'Choose either local Agentic Wallet basket execution or direct browser-wallet signing. Both require fresh evidence, explicit eligibility confirmation and wallet-owned authorization.',
+   evidence:'The local route journals and stops on uncertain orders. The browser route signs one exact-size approval or swap at a time and reconciles the exact calldata after mining.',
+   href:'/sentinel/invest#purchase',cta:'Choose a purchase route'},
   {number:'06',phase:'PORTFOLIO WATCH',name:'Observe what the wallet actually holds.',status:portfolio?portfolio.state.replaceAll('_',' '):'NOT OBSERVED IN SESSION',tone:portfolio?.state==='PORTFOLIO_DRIFT'?'blocked':portfolio?'ready':'wait',
    copy:'Read issuer-token balances at a pinned BSC block and compare marked exposure with target weights. Empty holdings never trigger an invented rebalance.',
    evidence:portfolio?portfolio.summary:'The monitoring step can be inspected independently; a watchlist is not evidence of a purchase.',
-   href:'/sentinel/watch',cta:'Read real portfolio balances'}
+   href:'/sentinel/portfolio',cta:'Read real portfolio balances'}
  ] as const;
  return <div className="desk-wrap desk-journey">
   <div className="desk-breadcrumb"><Link href="/sentinel">THE BRIEF</Link><span>→</span><b>EXECUTION WALKTHROUGH</b></div>
-  <div className="desk-journey-stripe"><span>WORKING PRODUCT / LIVE DATA WHERE AUTHORIZED</span><span>BNB SMART CHAIN · 56</span><span>NO PURCHASE CLAIMED</span></div>
+  <div className="desk-journey-stripe"><span>WORKING PRODUCT / LIVE DATA WHERE AUTHORIZED</span><span>BNB SMART CHAIN · 56</span><span>PURCHASE REQUIRES WALLET AUTHORIZATION</span></div>
   <section className="desk-journey-hero">
    <div className="desk-journey-hero-copy">
     <Eyebrow>THE WHOLE AGENT LOOP / NOT JUST WRAPPER COMPARISON</Eyebrow>
     <h1>A basket<br/>is a plan.<br/><em>Can it execute?</em></h1>
     <p>Sentinel translates tokenized equities into a weighted BSC basket, checks each proposed spot transaction, and explains why it can—or cannot—proceed. The agent plans and verifies. The human owns every spending decision.</p>
-    <div className="desk-journey-primary"><a href="#decision-sequence" className="desk-button-accent">Follow six decisions <ArrowDownRight size={17}/></a><Link href="/sentinel/baskets" className="desk-journey-inline">Build a basket <ArrowUpRight size={16}/></Link></div>
-    <div className="desk-journey-trust"><LockKeyhole size={16}/> MAINNET EXECUTION LOCKED / NO STOCK TOKENS PURCHASED</div>
+    <div className="desk-journey-primary"><a href="#decision-sequence" className="desk-button-accent">Follow six decisions <ArrowDownRight size={17}/></a><Link href="/sentinel#build" className="desk-journey-inline">Build a basket <ArrowUpRight size={16}/></Link></div>
+    <div className="desk-journey-trust"><LockKeyhole size={16}/> TWO USER-OWNED PURCHASE ROUTES / NO UNATTENDED SIGNING</div>
    </div>
    <aside className="desk-journey-proof">
     <div className="desk-journey-proof-top"><span>CONTROL ROOM / LIVE CONTEXT</span><span>FIG. 01</span></div>
     <div className="desk-journey-proof-row"><span>01 / ISSUER INVENTORY</span><strong>{live?String(snapshot.count):'—'}</strong><small>{live?'Real observed contracts':'Unavailable'}</small></div>
     <div className="desk-journey-proof-row"><span>02 / BASKET TARGET</span><strong>{basketReady?basket.length+' LEGS':'—'}</strong><small>{basketReady?'Weights total 100%':'Select constituent issuers'}</small></div>
     <div className="desk-journey-proof-row"><span>03 / BSC WALLET</span><strong>{wallet.ready?'CHAIN 56':'—'}</strong><small>{wallet.ready?'Connected browser wallet':'Connect before simulation'}</small></div>
-    <div className="desk-journey-proof-row"><span>04 / SWAP RELEASE</span><strong className="stop">NO GO</strong><small>Contract semantics + eligibility unverified</small></div>
+    <div className="desk-journey-proof-row"><span>04 / LIVE PURCHASE</span><strong>USER GATED</strong><small>Agentic basket or per-leg browser signing</small></div>
     <p>Evidence from this browser, not a staged fill or synthetic basket position.</p>
    </aside>
   </section>
@@ -90,6 +90,6 @@ export default function GuidedDemo(){
     return <div className="desk-journey-log-row" key={proof.kind+proof.recordedAt+i}><span>{proof.kind==='SIMULATION'?<Route size={21}/>:<Eye size={21}/>}</span><div><b>{label.title}</b><p>{proof.summary}</p><small>{label.caveat} · {new Date(proof.recordedAt).toLocaleTimeString()} · {proof.observedLegs}/{proof.totalLegs} legs</small></div></div>;
    }):<div className="desk-journey-no-proof"><Database size={26}/><div><b>No simulation or wallet-balance proof has been recorded in this session.</b><p>That's an honest starting state. Trigger a real simulation or public BSC balance read to populate the journal.</p></div></div>}</div>
   </section>
-  <section className="desk-journey-end"><div><span>THE SUBMISSION TRUTH</span><h2>A useful agent<br/>must be able to <em>say no.</em></h2></div><div><p>Live issuer inventory and unsigned route/simulation calls have been verified. A genuine BSC simulation was blocked by insufficient USDT. The nested router implementation and personal issuer trading eligibility are not independently verified; therefore no approval, swap or purchase was submitted. A portfolio target is not a filled basket.</p><Link href="/sentinel/execute">Inspect live preflight <ArrowUpRight size={18}/></Link></div></section>
+  <section className="desk-journey-end"><div><span>THE PRODUCT CONTRACT</span><h2>A useful agent<br/>must be able to <em>say no.</em></h2></div><div><p>Live inventory, wrapper identity, quotes and simulations are preflight evidence—not a fill. Purchase begins only when the user selects a signer route and approves the exact action. Settlement is credited only after matching transaction input, receipt and issuer-token delivery evidence.</p><Link href="/sentinel/invest#preflight">Inspect live preflight <ArrowUpRight size={18}/></Link></div></section>
  </div>;
 }

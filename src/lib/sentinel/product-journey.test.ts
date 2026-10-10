@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {checkoutPlan,checkoutGate,quoteState,EXECUTION_HOLD_REASON} from './product-journey';
+import {checkoutPlan,checkoutGate,quoteState,LIVE_BASKET_MAX_USD} from './product-journey';
 import type {Equity,QuotePreview} from './model';
 const issuer=(ticker:string,platform:'bstock'|'ondo'='bstock',available=true):Equity=>({
  ticker,platform,symbol:ticker+'B',address:'0x'+ticker.charCodeAt(0).toString(16).padStart(40,'0'),
@@ -36,12 +36,13 @@ test('fresh quote identity and price policy must match exact leg',()=>{
  assert.equal(quoteState(leg,{...q,checkedAt:new Date(now-31000).toISOString()},now),'EXPIRED');
  assert.equal(quoteState(leg,{...q,review:{status:'blocked',reasons:['Impact']}},now),'FLAGGED');
 });
-test('no combination of wallet connection and quotes unlocks a browser signature',()=>{
+test('a reviewed quote makes the basket eligible for a fresh authorization review',()=>{
  const asset=issuer('NVDA');
  const p=checkoutPlan([{ticker:'NVDA',platform:'bstock',weight:100}],[asset],10);
- const gate=checkoutGate(p,true,true,{},Date.now());
- assert.equal(gate.wallet,true);assert.equal(gate.canSubmit,false);
- assert.equal(gate.executionSafety,false);
- assert.match(gate.reason,/route/i);
- assert.match(EXECUTION_HOLD_REASON,/verification/i);
+ const now=Date.now();
+ const quote:QuotePreview={ticker:'NVDA',platform:'bstock',address:asset.address,amountUsd:10,tokenAmount:.01,
+  mode:'SWAP',vendor:'LiquidMesh',priceImpactPct:.1,reportedFee:null,checkedAt:new Date(now).toISOString(),review:{status:'review',reasons:[]}};
+ const gate=checkoutGate(p,true,true,{NVDA:quote},now);
+ assert.equal(gate.wallet,true);assert.equal(gate.canPrepare,true);
+ assert.equal(checkoutPlan([{ticker:'NVDA',platform:'bstock',weight:100}],[asset],LIVE_BASKET_MAX_USD+.01).issues.length>0,true);
 });

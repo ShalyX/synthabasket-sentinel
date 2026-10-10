@@ -13,13 +13,14 @@ export async function POST(req:NextRequest){
  limits.set(ip,old&&old.until>now?{count:old.count+1,until:old.until}:{count:1,until:now+60000});
  if(limits.size>500)limits.clear();
  let json:unknown;
- try{const body=await req.text();if(body.length>400)throw Error();json=JSON.parse(body);}catch{return reply({error:'Malformed receipt lookup.'},400);}
+ try{const body=await req.text();if(body.length>45000)throw Error();json=JSON.parse(body);}catch{return reply({error:'Malformed receipt lookup.'},400);}
  if(!json||typeof json!=='object')return reply({error:'Malformed receipt lookup.'},400);
  const fields=json as Record<string,unknown>;
- if(Object.keys(fields).some(k=>!['hash','sender','target'].includes(k))||
+ if(Object.keys(fields).some(k=>!['hash','sender','target','data'].includes(k))||
   typeof fields.hash!=='string'||!/^0x[0-9a-f]{64}$/i.test(fields.hash)||
-  !validAddress(fields.sender)||!validAddress(fields.target))
-  return reply({error:'Provide transaction hash and reviewed sender/target only.'},400);
+  !validAddress(fields.sender)||!validAddress(fields.target)||typeof fields.data!=='string'||
+  !/^0x(?:[0-9a-f]{2}){4,20000}$/i.test(fields.data))
+  return reply({error:'Provide the wallet hash and exact reviewed sender, target and calldata.'},400);
  try{
   const call=async(method:string,params:unknown[],id:number)=>{
    const res=await fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -28,10 +29,16 @@ export async function POST(req:NextRequest){
    const data:unknown=await res.json();if(!data||typeof data!=='object'||!('result' in data))throw Error();
    return (data as {result:unknown}).result;
   };
-  const [chain,receipt]=await Promise.all([call('eth_chainId',[],1),call('eth_getTransactionReceipt',[fields.hash],2)]);
+  const [chain,receipt,transaction]=await Promise.all([call('eth_chainId',[],1),call('eth_getTransactionReceipt',[fields.hash],2),call('eth_getTransactionByHash',[fields.hash],3)]);
   if(chain!=='0x38')return reply({error:'RPC returned wrong chain.'},503);
-  if(receipt===null)return reply({kind:'sentinel.bsc.tx-receipt',status:'PENDING',hash:fields.hash,chainId:56});
-  if(!receipt||typeof receipt!=='object')throw Error();
+  if(transaction===null)return reply({kind:'sentinel.bsc.tx-receipt',status:'PENDING',hash:fields.hash,chainId:56,calldataMatched:false});
+  if(!transaction||typeof transaction!=='object')throw Error();
+  const t=transaction as Record<string,unknown>;
+  if(String(t.from).toLowerCase()!==String(fields.sender).toLowerCase()||String(t.to).toLowerCase()!==String(fields.target).toLowerCase()||
+    String(t.input).toLowerCase()!==fields.data.toLowerCase()||!['0x0','0x'].includes(String(t.value).toLowerCase()))
+   return reply({kind:'sentinel.bsc.tx-receipt',status:'MISMATCH',error:'Wallet transaction did not match the exact reviewed sender, target, zero value and calldata.',calldataMatched:false},409);
+  if(receipt===null)return reply({kind:'sentinel.bsc.tx-receipt',status:'PENDING',hash:fields.hash,chainId:56,calldataMatched:true});
+  if(typeof receipt!=='object')throw Error();
   const r=receipt as Record<string,unknown>;
   if(typeof r.from!=='string'||r.from.toLowerCase()!==String(fields.sender).toLowerCase()||
      typeof r.to!=='string'||r.to.toLowerCase()!==String(fields.target).toLowerCase()||
@@ -40,6 +47,6 @@ export async function POST(req:NextRequest){
   if(r.status!=='0x1'&&r.status!=='0x0')throw Error();
   return reply({kind:'sentinel.bsc.tx-receipt',chainId:56,hash:fields.hash,
    status:r.status==='0x1'?'MINED_SUCCESS':'MINED_REVERTED',blockNumber:r.blockNumber,
-   scope:'EVM receipt only; issuer-token balance changes and finality remain separately unverified.'});
+   calldataMatched:true,scope:'Exact reviewed transaction input plus EVM receipt; issuer-token balance changes and finality remain separately verified.'});
  }catch{return reply({error:'BSC receipt could not be verified. Do not infer success.'},503);}
 }

@@ -1,5 +1,7 @@
 # M14 — SynthaBasket Sentinel: Consumer Product Rescue
 
+> Historical milestone. Superseded by [M15_PRODUCT_RESTRUCTURE_2026-10-10.md](M15_PRODUCT_RESTRUCTURE_2026-10-10.md), which restores issuer choice and both purchase routes while preserving the six-decision model.
+
 **2026-10-10.** Main product route now follows **Discover & Build → Review & Invest → Portfolio**. Developer-focused rooms remain accessible through advanced links, but not primary navigation.
 
 ## Hard execution boundary / P0

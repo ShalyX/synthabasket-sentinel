@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import {useEffect,useRef,useState} from 'react';
 import {ArrowRight,LockKeyhole,RefreshCw,ShieldAlert} from 'lucide-react';
 import {useWallet,type WalletUnsignedTx} from './WalletContext';
@@ -12,16 +13,18 @@ type Reviewed={
  slippagePercent:number;priceImpactPercent:number;reason:string;expiresAt:string;simulatorPassed:boolean;
  approval?:{to:string;data:string;value:'0x0'};
  swap?:{to:string;data:string;value:'0x0';gas:string};
+ routeTrust:'AUTHENTICATED_BINANCE_BUILD';independentlyDecoded:false;
+ eligibility:{state:'USER_ATTESTED';reason:string};
 };
-type Submitted={hash:string;target:string;sender:string;type:'approval'|'swap';status:string;block?:string; ticker:string;platform:'bstock'|'ondo';tokenContract:string};
+type Submitted={hash:string;target:string;sender:string;input:string;type:'approval'|'swap';status:string;block?:string; ticker:string;platform:'bstock'|'ondo';tokenContract:string};
 type Settlement={status:string;confirmations?:string;stateBalances?:{status:string;usdtNetDecrease?:string;issuerNetIncrease?:string};transferLogs?:{usdtSentRaw:string;issuerReceivedRaw:string}};
-const MAINNET_RELEASE_UNVERIFIED=true; // UI invariant; independent server checks deny live spend.
 export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];enabled:boolean;operationKey:string}){
  const wallet=useWallet();
  const [index,setIndex]=useState(0);
  const [review,setReview]=useState<Reviewed|null>(null);
  const [busy,setBusy]=useState(false);
  const [ack,setAck]=useState(false);
+ const [riskAck,setRiskAck]=useState(false);
  const [err,setErr]=useState<string|null>(null);
  const [submitted,setSubmitted]=useState<Submitted|null>(null);
  const [settlement,setSettlement]=useState<Settlement|null>(null);
@@ -30,21 +33,22 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
  const operation=useRef(operationKey);operation.current=operationKey;
  const abort=useRef<AbortController|null>(null);
  const leg=legs[index];
- useEffect(()=>{abort.current?.abort();setReview(null);setErr(null);setAck(false);setSubmitted(null);setSettlement(null);setReconciled(null);},[operationKey,index]);
+ useEffect(()=>{abort.current?.abort();setReview(null);setErr(null);setAck(false);setRiskAck(false);setSubmitted(null);setSettlement(null);setReconciled(null);},[operationKey,index]);
  useEffect(()=>{setNow(Date.now());const id=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(id);},[]);
  const scoped=review&&leg&&wallet.address&&wallet.ready&&review.sender.toLowerCase()===wallet.address.toLowerCase()&&
   review.ticker===leg.ticker&&review.issuer===leg.platform&&review.amountUsd===leg.amountUsd?review:null;
  const live=!!scoped&&Date.parse(scoped.expiresAt)>now+2000;
- const signable=!MAINNET_RELEASE_UNVERIFIED&&enabled&&!busy&&!!scoped&&live&&ack&&!submitted&&
+ const signable=enabled&&!busy&&!!scoped&&live&&ack&&!submitted&&
   (scoped.phase==='APPROVAL_REQUIRED'&&!!scoped.approval||scoped.phase==='SWAP_READY'&&!!scoped.swap);
  async function prepare(){
-  if(MAINNET_RELEASE_UNVERIFIED||!enabled||!leg||busy)return;
+  if(!enabled||!riskAck||!leg||busy)return;
   const key=operationKey,controller=new AbortController();
   abort.current?.abort();abort.current=controller;
   setBusy(true);setErr(null);setReview(null);setAck(false);setSubmitted(null);setSettlement(null);setReconciled(null);
   try{
    const response=await fetch('/api/sentinel/authorize',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ticker:leg.ticker,platform:leg.platform,amountUsd:leg.amountUsd,walletAddress:wallet.address}),
+    body:JSON.stringify({ticker:leg.ticker,platform:leg.platform,amountUsd:leg.amountUsd,walletAddress:wallet.address,
+     attestations:{issuerEligibility:true,providerRouteTrust:true}}),
     cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(55000)])});
    const value=await response.json();
    if(controller.signal.aborted||operation.current!==key)return;
@@ -65,7 +69,7 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
     ...(phase==='SWAP_READY'?{gas:'0x'+BigInt((tx as NonNullable<Reviewed['swap']>).gas).toString(16)}:{})};
    const hash=await wallet.submitReviewedTransaction(transaction,Date.parse(scoped.expiresAt));
    if(operation.current!==key)return;
-   setSubmitted({hash,target:tx.to,sender:scoped.sender,type:phase==='SWAP_READY'?'swap':'approval',status:'PENDING',ticker:scoped.ticker,platform:scoped.issuer as 'bstock'|'ondo',tokenContract:scoped.tokenContract});
+   setSubmitted({hash,target:tx.to,sender:scoped.sender,input:tx.data,type:phase==='SWAP_READY'?'swap':'approval',status:'PENDING',ticker:scoped.ticker,platform:scoped.issuer as 'bstock'|'ondo',tokenContract:scoped.tokenContract});
    setReview(null);setAck(false);
   }catch(e){if(operation.current===key)setErr(e instanceof Error?e.message:'Wallet request failed or was rejected.');}
   finally{setBusy(false);}
@@ -75,7 +79,7 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
   const key=operationKey,set=submitted;setBusy(true);setErr(null);setReconciled(null);
   try{
    const response=await fetch('/api/sentinel/receipt',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({hash:set.hash,sender:set.sender,target:set.target}),cache:'no-store'});
+    body:JSON.stringify({hash:set.hash,sender:set.sender,target:set.target,data:set.input}),cache:'no-store'});
    const value=await response.json();
    if(operation.current!==key)return;
    if(!response.ok)throw Error(value.error||'Receipt verification unavailable.');
@@ -114,8 +118,10 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
     {legs.map((x,i)=><option key={x.ticker+':'+x.platform} value={i}>{x.ticker} · {x.platform==='bstock'?'bStocks':'Ondo'} · ${x.amountUsd.toFixed(2)} USDT</option>)}
    </select>
   </label>
-  <button type="button" className="desk-auth-button" disabled={MAINNET_RELEASE_UNVERIFIED||!enabled||busy||!leg} onClick={()=>void prepare()}>
-   {busy?<RefreshCw size={17}/>:<LockKeyhole size={17}/>} Trading permission unverified — review locked <ArrowRight size={16}/>
+  <label className="desk-auth-ack"><input type="checkbox" checked={riskAck} disabled={!enabled||busy} onChange={e=>{setRiskAck(e.target.checked);setReview(null);}}/>
+   I confirm I am eligible to trade this issuer product and accept an authenticated Binance-built route whose nested LiquidMesh calls are structurally checked but not independently decoded.</label>
+  <button type="button" className="desk-auth-button" disabled={!enabled||!riskAck||busy||!leg} onClick={()=>void prepare()}>
+   {busy?<RefreshCw size={17}/>:<LockKeyhole size={17}/>} Prepare fresh live action <ArrowRight size={16}/>
   </button>
   {!enabled&&<p className="desk-auth-warning">Connect on BSC, select a valid basket and stop any active simulation before reviewing a live action.</p>}
   {scoped&&<div className="desk-auth-review">
@@ -127,6 +133,8 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
     <div><dt>SWAP ROUTER</dt><dd>{scoped.to}</dd></div>
     <div><dt>APPROVAL SPENDER</dt><dd>{scoped.spender}</dd></div>
     <div><dt>SIMULATION</dt><dd>{scoped.simulatorPassed?'PASSED':'NOT PASSED — approval only'}</dd></div>
+    <div><dt>ROUTE TRUST</dt><dd>AUTHENTICATED BINANCE BUILD · NESTED CALLS NOT INDEPENDENTLY DECODED</dd></div>
+    <div><dt>ELIGIBILITY</dt><dd>USER ATTESTED · NOT PROVIDER VERIFIED</dd></div>
     <div><dt>FRESH UNTIL</dt><dd>{new Date(scoped.expiresAt).toLocaleTimeString()} {live?'':'· EXPIRED'}</dd></div>
    </dl>
    {scoped.phase==='APPROVAL_REQUIRED'&&<p className="desk-auth-warning">An exact-size USDT approval is NOT a purchase. Permission may persist if the swap is not submitted. Revoke it independently if unused; refresh this review after mining.</p>}
@@ -145,16 +153,19 @@ export function ExecutionAuthorization({legs,enabled,operationKey}:{legs:Leg[];e
     {reconciled&&<div className="desk-auth-settlement" role="status">
      <b>TRANSACTION RECONCILIATION · {reconciled.status.replaceAll('_',' ')}</b>
      <p>{reconciled.reason}</p>
-     <p>No basket leg is automatically advanced from an EVM receipt, allowance, or transfer log. Authorized calldata fingerprint and issuer permissions remain unverified.</p>
+     <p>No basket leg advances until the wallet transaction input and independent settlement evidence match the reviewed action.</p>
     </div>}
     {settlement&&<div className="desk-auth-settlement"><b>ONCHAIN TOKEN EVIDENCE · {settlement.status}</b>
      <p>{settlement.confirmations||'—'} observed block confirmations · historical balance evidence: {settlement.stateBalances?.status||'UNAVAILABLE'}</p>
      {settlement.transferLogs&&<p>USDT sent (raw): {settlement.transferLogs.usdtSentRaw} · issuer token credited (raw): {settlement.transferLogs.issuerReceivedRaw}</p>}
      {settlement.stateBalances?.status==='VERIFIED'&&<p>USDT balance decrease (raw): {settlement.stateBalances.usdtNetDecrease} · issuer balance increase (raw): {settlement.stateBalances.issuerNetIncrease}</p>}
     </div>}
+    {reconciled?.status==='APPROVAL_MINED'&&<button type="button" onClick={()=>{setSubmitted(null);setSettlement(null);setReconciled(null);}}>Prepare the swap after allowance refresh</button>}
+    {reconciled?.status==='PURCHASE_VERIFIED'&&index<legs.length-1&&<button type="button" onClick={()=>setIndex(i=>i+1)}>Review next basket leg</button>}
+    {reconciled?.status==='PURCHASE_VERIFIED'&&index===legs.length-1&&<Link className="desk-auth-button" href="/sentinel/portfolio">View verified on-chain portfolio <ArrowRight size={16}/></Link>}
    </div>
   </div>}
   {err&&<p className="desk-auth-error" role="alert">{err}</p>}
-  <p className="desk-auth-footnote">Live spending is locked: the LiquidMesh nested swap calls and upgrade authority have not been verified from trusted source, and no verified issuer eligibility response exists for this user, product, jurisdiction and wallet. A recognized market quote is NOT entitlement to trade. No unattended signatures or unlimited approvals.</p>
+  <p className="desk-auth-footnote">Direct signing uses an explicit provider-trust model: Binance authenticates and builds the route, Sentinel pins the sender, tokens, amount, minimum output, router, spender and selector, but does not independently decode every nested LiquidMesh call. Eligibility is your explicit attestation, not a provider determination. Every approval is exact-size; every leg needs a separate click.</p>
  </section>;
 }

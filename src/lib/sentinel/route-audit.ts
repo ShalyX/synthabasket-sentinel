@@ -84,6 +84,32 @@ export function verifyKnownRouterSemantics(tx:CheckedEvmTransaction,expected:Bou
  return {ok:false,message:'Observed LiquidMesh envelope matches, but recipient, delegated facet controls and nested routing targets lack verified ABI/source. Live approvals and swap signing remain locked.'};
 }
 
+export interface ProviderBuiltRouteAcceptance{
+ trustModel:'AUTHENTICATED_BINANCE_BUILD';
+ structuralEvidence:StructuralSwapEvidence;
+ independentlyDecoded:false;
+ userAcceptedProviderTrust:true;
+}
+/**
+ * Explicit provider-trust boundary for live browser signing. This does not
+ * pretend the opaque LiquidMesh payload has been independently decoded. The
+ * caller must have obtained `tx` directly from the authenticated Binance swap
+ * builder and must require a fresh user acknowledgement of that trust model.
+ */
+export function acceptAuthenticatedProviderBuild(
+ tx:CheckedEvmTransaction,expected:BoundSwapFacts,
+ controls:{authenticatedBinanceResponse:boolean;userAcceptedProviderTrust:boolean}
+):Validation<ProviderBuiltRouteAcceptance>{
+ if(!controls.authenticatedBinanceResponse)
+  return {ok:false,message:'The swap was not obtained directly from the authenticated Binance transaction builder.'};
+ if(!controls.userAcceptedProviderTrust)
+  return {ok:false,message:'Explicit acceptance of the provider-built opaque route is required.'};
+ const structural=inspectObservedLiquidMeshCalldata(tx,expected);
+ if(!structural.ok)return structural;
+ return {ok:true,value:{trustModel:'AUTHENTICATED_BINANCE_BUILD',structuralEvidence:structural.value,
+  independentlyDecoded:false,userAcceptedProviderTrust:true}};
+}
+
 export function inspectBuildMinimum(
  raw:unknown,quotedOutputRaw:string,slippageBps=50
 ):Validation<{minReceiveRaw:string}>{

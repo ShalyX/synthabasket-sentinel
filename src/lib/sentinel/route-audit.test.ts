@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {inspectBuildMinimum,verifyKnownRouterSemantics,verifyReceiptTransferLog} from './route-audit';
+import {acceptAuthenticatedProviderBuild,inspectBuildMinimum,verifyKnownRouterSemantics,verifyReceiptTransferLog} from './route-audit';
 const wallet='0x3333333333333333333333333333333333333333';
 const token='0x2222222222222222222222222222222222222222';
 const blockHash='0x'+'ab'.repeat(32);
@@ -30,7 +30,7 @@ test('receipt Transfer proof requires exact contract, indexed owner and anchored
  assert.equal(verifyReceiptTransferLog({tokenContract:token,account:wallet,blockHash:'invalid',logs:[valid]}).ok,false);
 });
 
-test('observed 10-word LiquidMesh envelope can match amounts but never authorize an opaque route',async()=>{
+test('observed envelope needs an authenticated provider response and explicit trust acceptance',async()=>{
  const {inspectObservedLiquidMeshCalldata,OBSERVED_BSC_LIQUIDMESH_ROUTER,OFFICIAL_LIQUIDMESH_BSC_ROUTER}=await import('./route-audit');
  const w=(x:bigint)=>x.toString(16).padStart(64,'0');
  const addr=(x:string)=>x.slice(2).toLowerCase().padStart(64,'0');
@@ -49,13 +49,18 @@ test('observed 10-word LiquidMesh envelope can match amounts but never authorize
   assert.equal(parsed.value.recipientProven,false);
   assert.equal(parsed.value.permissionToSpend,false);}
  assert.equal(verifyKnownRouterSemantics(tx,expected).ok,false);
+ assert.equal(acceptAuthenticatedProviderBuild(tx,expected,{authenticatedBinanceResponse:false,userAcceptedProviderTrust:true}).ok,false);
+ assert.equal(acceptAuthenticatedProviderBuild(tx,expected,{authenticatedBinanceResponse:true,userAcceptedProviderTrust:false}).ok,false);
+ const accepted=acceptAuthenticatedProviderBuild(tx,expected,{authenticatedBinanceResponse:true,userAcceptedProviderTrust:true});
+ assert.equal(accepted.ok,true);
+ if(accepted.ok)assert.equal(accepted.value.independentlyDecoded,false);
  // A mutated opaque nested instruction can still pass OUTER structure, proving
- // why structural matching MUST NEVER become live authorization.
+ // why structural matching alone is never independent semantic verification.
  const changedOpaque=data.slice(0,-2)+'22';
  assert.equal(inspectObservedLiquidMeshCalldata({...tx,data:changedOpaque},expected).ok,true);
  assert.equal(verifyKnownRouterSemantics({...tx,data:changedOpaque},expected).ok,false);
- // A different recipient or a different opaque control address STILL passes
- // the 10-word shape, so this parser cannot authorize spending.
+ // A different recipient or opaque control address still passes the 10-word
+ // shape; the live policy is therefore explicitly provider-trusting, not audited.
  assert.equal(inspectObservedLiquidMeshCalldata(tx,{...expected,recipient:token}).ok,true);
  assert.equal(verifyKnownRouterSemantics(tx,{...expected,recipient:token}).ok,false);
  const otherControlChanged='0xad43f73d'+data.slice(10,10+64*7)+addr(token)+data.slice(10+64*8);

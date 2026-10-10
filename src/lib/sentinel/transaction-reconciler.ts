@@ -4,7 +4,7 @@ import {validAddress} from './execution-preflight';
 export type TransactionKind='approval'|'swap';
 export type ReconciliationPhase=
  'PENDING'|'REVERTED'|'MISMATCH'|'UNAVAILABLE'|
- 'RECEIPT_ONLY'|'APPROVAL_MINED'|'SETTLEMENT_INCOMPLETE'|'TRANSFER_EVIDENCE_ONLY';
+ 'RECEIPT_ONLY'|'APPROVAL_MINED'|'SETTLEMENT_INCOMPLETE'|'TRANSFER_EVIDENCE_ONLY'|'PURCHASE_VERIFIED';
 export interface ExpectedChainTransaction {
  hash:string;sender:string;target:string;kind:TransactionKind;
  ticker:string;platform:Platform;tokenContract:string;
@@ -12,14 +12,14 @@ export interface ExpectedChainTransaction {
 export interface Reconciliation {
  status:ReconciliationPhase;reason:string;hash:string;
  receiptVerified:boolean;transferEvidenceVerified:boolean;
- filledPurchaseConfirmed:false;canProceedToNextSpend:false;
+ filledPurchaseConfirmed:boolean;canProceedToNextSpend:boolean;
 }
 const hash=(x:unknown):x is string=>typeof x==='string'&&/^0x[0-9a-f]{64}$/i.test(x);
 const decimal=(x:unknown):x is string=>typeof x==='string'&&/^(0|[1-9][0-9]{0,77})$/.test(x);
 const obj=(x:unknown):x is Record<string,unknown>=>!!x&&typeof x==='object'&&!Array.isArray(x);
-function out(expected:ExpectedChainTransaction,status:ReconciliationPhase,reason:string,receipt=false,transfer=false):Reconciliation{
+function out(expected:ExpectedChainTransaction,status:ReconciliationPhase,reason:string,receipt=false,transfer=false,purchased=false):Reconciliation{
  return {status,reason,hash:expected.hash,receiptVerified:receipt,transferEvidenceVerified:transfer,
-  filledPurchaseConfirmed:false,canProceedToNextSpend:false};
+  filledPurchaseConfirmed:purchased,canProceedToNextSpend:purchased};
 }
 /** The input must have been returned by the explicitly connected wallet, not sourced from user-editable text. */
 export function reconcileTransaction(
@@ -35,6 +35,8 @@ export function reconcileTransaction(
   return out(expected,'MISMATCH','Receipt hash or chain does not match the wallet-submitted transaction.');
  if(receipt.status==='PENDING')
   return out(expected,'PENDING','Transaction has not produced a chain receipt; poll only on user action.');
+ if(receipt.calldataMatched!==true)
+  return out(expected,'MISMATCH','Mined transaction calldata does not match the exact reviewed wallet action.');
  if(receipt.status==='MINED_REVERTED')
   return out(expected,'REVERTED','EVM receipt reverted. This is not a settlement or successful token purchase.',true);
  if(receipt.status!=='MINED_SUCCESS'||typeof receipt.blockNumber!=='string'||
@@ -62,15 +64,13 @@ export function reconcileTransaction(
     !decimal(settlement.transferLogs.issuerReceivedRaw)||BigInt(settlement.transferLogs.usdtSentRaw)<=0n||
     BigInt(settlement.transferLogs.issuerReceivedRaw)<=0n)
   return out(expected,'SETTLEMENT_INCOMPLETE','Transfer evidence is inconsistent with expected issuer or positive token deltas.',true);
- // Even valid transfer logs do not match transaction calldata, minOut or the user's
- // authorized pretrade fingerprint. Do NOT equate them with a confirmed basket fill.
- return out(expected,'TRANSFER_EVIDENCE_ONLY',
-  'Matching EVM receipt plus issuer-transfer and historical balance observations verified. A specific authorized swap-calldata fingerprint and legal entitlement are still unverified; no purchase claim.',true,true);
+ return out(expected,'PURCHASE_VERIFIED',
+  'The exact wallet-submitted calldata, matching EVM receipt, issuer transfer and historical balance deltas were verified. This confirms on-chain token delivery, not legal or economic entitlement.',true,true,true);
 }
 export interface BasketReconciliation{
- state:'NO_TRANSACTIONS'|'AWAITING_EVIDENCE'|'PARTIAL_OBSERVATION'|'TRANSFERS_OBSERVED_ONLY';
+ state:'NO_TRANSACTIONS'|'AWAITING_EVIDENCE'|'PARTIAL_OBSERVATION'|'PURCHASES_VERIFIED';
  entries:Reconciliation[];
- filledPurchaseConfirmed:false;safeToAdvanceAutomatically:false;
+ filledPurchaseConfirmed:boolean;safeToAdvanceAutomatically:false;
 }
 export function reconcileBasketTransactions(
  expected:ExpectedChainTransaction[],verdicts:Reconciliation[]
@@ -82,7 +82,7 @@ export function reconcileBasketTransactions(
  if(unique.size!==expected.length||expected.some(e=>verdicts.filter(v=>v.hash.toLowerCase()===e.hash.toLowerCase()).length!==1)||
     verdicts.length!==expected.length)
   return {state:'AWAITING_EVIDENCE',entries:verdicts,filledPurchaseConfirmed:false,safeToAdvanceAutomatically:false};
- const transfers=verdicts.filter(v=>v.status==='TRANSFER_EVIDENCE_ONLY').length;
- return {state:transfers===expected.length?'TRANSFERS_OBSERVED_ONLY':transfers>0?'PARTIAL_OBSERVATION':'AWAITING_EVIDENCE',
-  entries:verdicts,filledPurchaseConfirmed:false,safeToAdvanceAutomatically:false};
+ const purchases=verdicts.filter(v=>v.status==='PURCHASE_VERIFIED').length;
+ return {state:purchases===expected.length?'PURCHASES_VERIFIED':purchases>0?'PARTIAL_OBSERVATION':'AWAITING_EVIDENCE',
+  entries:verdicts,filledPurchaseConfirmed:purchases===expected.length,safeToAdvanceAutomatically:false};
 }

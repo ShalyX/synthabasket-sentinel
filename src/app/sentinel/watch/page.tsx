@@ -166,7 +166,7 @@ export default function PortfolioWatch(){
        <p className="desk-watch-no-trade"><ShieldCheck size={20}/> Within the {threshold}% drift band. No adjustment proposed.</p>:
        assessment.legs.filter(x=>x.suggestedDirection!=='HOLD').sort((a,b)=>Math.abs(b.deltaPct)-Math.abs(a.deltaPct)).map(x=><div className="desk-watch-action" key={x.ticker}><div><b>{x.suggestedDirection==='INCREASE'?'UNDERWEIGHT':'OVERWEIGHT'}</b><h3>{x.ticker} <span>{x.platform==='bstock'?'bStocks':'Ondo'}</span></h3></div><div><strong>{x.suggestedDirection==='INCREASE'?'+':'−'}{formatUsd(x.indicativeValueUsd)}</strong><small>{percent(x.actualPct)} observed → {x.targetPct}% thesis</small></div></div>)}
       </div>
-      <p className="desk-watch-proposal-note"><LockKeyhole size={16}/> No order was generated. Rebalancing can require sales, fresh buy quotes, approvals, USDT reserves, fees and issuer eligibility. All execution remains locked pending independent verification.</p>
+      <p className="desk-watch-proposal-note"><LockKeyhole size={16}/> No order was generated. Rebalancing can require sales, fresh buy quotes, approvals, USDT reserves, fees and issuer eligibility. Return to Review &amp; Invest to authorize any new purchase; this observation screen never trades.</p>
      </>:<div className="desk-watch-empty-proposal"><TriangleAlert size={20}/><p>No trading proposal: real balances, fresh issuer marks, and a nonempty selected portfolio are required.</p></div>}
     </section>
     <section className="desk-watch-journal">
@@ -181,11 +181,11 @@ export default function PortfolioWatch(){
      <span>{agenticAddress?'BINANCE AGENTIC WALLET / PUBLIC WATCH':'CONNECTED ACCOUNT'}</span>{agenticAddress?<p className="desk-watch-rail-note">Read-only public address supplied by Sentinel's local execution record. No browser signing authority implied.</p>:<WalletControls/>}
      <small>{agenticAddress??(wallet.ready?wallet.address:'Connect a BSC mainnet wallet or open a verified Agentic Wallet receipt to observe positions.')}</small>
     </div>
-    <div className="desk-watch-checklist"><div><span>01 / BSC ACCOUNT</span><b>{agenticAddress?'PUBLIC OBSERVATION':wallet.ready?'CONNECTED':wallet.address?'WRONG NETWORK':'WAITING'}</b></div><div><span>02 / SELECTED BASKET</span><b>{basket.length===0?'NOT SET':basket.length+' LEGS'}</b></div><div><span>03 / ISSUER MARKS</span><b>{feed==='live'?(snapshot?.source==='first-party-production-readonly'?'RELAYED LIVE':'LIVE SOURCE'):feed.toUpperCase()}</b></div><div><span>04 / EXECUTION</span><b>LOCKED</b></div></div>
+    <div className="desk-watch-checklist"><div><span>01 / BSC ACCOUNT</span><b>{agenticAddress?'PUBLIC OBSERVATION':wallet.ready?'CONNECTED':wallet.address?'WRONG NETWORK':'WAITING'}</b></div><div><span>02 / SELECTED BASKET</span><b>{basket.length===0?'NOT SET':basket.length+' LEGS'}</b></div><div><span>03 / ISSUER MARKS</span><b>{feed==='live'?(snapshot?.source==='first-party-production-readonly'?'RELAYED LIVE':'LIVE SOURCE'):feed.toUpperCase()}</b></div><div><span>04 / THIS SCREEN</span><b>READ ONLY</b></div></div>
     <button className="desk-watch-refresh" type="button" disabled={!ready||busy} onClick={()=>setManualRun(n=>n+1)}><RefreshCw size={16} className={busy?'desk-spin':''}/>{busy?'Reading chain…':'Refresh BSC snapshot'}<ArrowRight size={16}/></button>
     {error&&<p className="desk-watch-error" role="alert">{error} The prior snapshot, if present, will expire rather than being treated as live.</p>}
     <p className="desk-watch-rail-note">Silent refresh every 30 seconds only while this page is visible, plus refresh on focus. If the feed, wallet, RPC or contract read fails, no allocation or rebalance is certified.</p>
-    <div className="desk-watch-rail-links"><Link href="/sentinel/baskets">Edit basket weights <ArrowUpRight size={15}/></Link><Link href="/sentinel/review">Inspect execution assumptions <ArrowUpRight size={15}/></Link><Link href="/sentinel/execute">Open Simulation Lab <ArrowUpRight size={15}/></Link></div>
+    <div className="desk-watch-rail-links"><Link href="/sentinel#build">Edit basket weights <ArrowUpRight size={15}/></Link><Link href="/sentinel/invest">Review &amp; Invest <ArrowUpRight size={15}/></Link><Link href="/sentinel/execute">Open advanced Simulation Lab <ArrowUpRight size={15}/></Link></div>
    </aside>
   </div>
  </div>;
