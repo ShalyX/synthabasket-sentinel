@@ -19,6 +19,8 @@ export default function PortfolioWatch(){
  const {basket,snapshot,feed,recordJourneyProof}=useDesk();
  const wallet=useWallet();
  const [threshold,setThreshold]=useState<number>(5);
+ const [agenticAddress,setAgenticAddress]=useState<string|null>(null);
+ useEffect(()=>{const candidate=new URLSearchParams(window.location.search).get('address');if(candidate&&/^0x[0-9a-f]{40}$/i.test(candidate))setAgenticAddress(candidate);},[]);
  const [observation,setObservation]=useState<PortfolioObservation|null>(null);
  const [viewKey,setViewKey]=useState('');
  const [busy,setBusy]=useState(false);
@@ -28,10 +30,11 @@ export default function PortfolioWatch(){
  const scopeRef=useRef('');
  const [clock,setClock]=useState(0);
  const basketKey=basket.map(x=>[x.ticker,x.platform,x.weight].join(':')).join('|');
- const observationKey=[wallet.sessionKey,basketKey,feed].join('|');
- const ready=wallet.ready&&basket.length>0&&feed==='live';
+ const selectedWalletAddress=agenticAddress??wallet.address;
+ const observationKey=[wallet.sessionKey,agenticAddress??'',basketKey,feed].join('|');
+ const ready=!!selectedWalletAddress&&(!!agenticAddress||wallet.ready)&&basket.length>0&&feed==='live';
  const scoped=viewKey===observationKey?observation:null;
- const isBound=scoped?.walletAddress.toLowerCase()===wallet.address?.toLowerCase();
+ const isBound=scoped?.walletAddress.toLowerCase()===selectedWalletAddress?.toLowerCase();
  const view=isBound?scoped:null;
  const assessment=useMemo(()=>assessPortfolioDrift(basket,view,threshold,clock||Date.now()),
   [basket,view,threshold,clock]);
@@ -50,9 +53,9 @@ export default function PortfolioWatch(){
    setObservation(null);setViewKey(observationKey);setJournal([]);
   }
   setError('');
-  if(!ready||!wallet.address)return()=>abort.abort();
+  if(!ready||!selectedWalletAddress)return()=>abort.abort();
   let inflight=false;
-  const address=wallet.address;
+  const address=selectedWalletAddress;
   const selected=basket.map(x=>({ticker:x.ticker,platform:x.platform}));
   async function load(){
    if(inflight||abort.signal.aborted||document.visibilityState!=='visible')return;
@@ -175,10 +178,10 @@ export default function PortfolioWatch(){
    <aside className="desk-watch-rail">
     <div className="desk-watch-rail-head"><span>WATCH CONTROL / 01</span><h2>The wallet<br/><em>is the witness.</em></h2><p>Sentinel reads your connected BSC wallet's token balances. Connecting doesn't grant trading authorization.</p></div>
     <div className="desk-watch-wallet">
-     <span>CONNECTED ACCOUNT</span><WalletControls/>
-     <small>{wallet.ready?wallet.address:'Connect a BSC mainnet wallet to observe its selected issuer contracts.'}</small>
+     <span>{agenticAddress?'BINANCE AGENTIC WALLET / PUBLIC WATCH':'CONNECTED ACCOUNT'}</span>{agenticAddress?<p className="desk-watch-rail-note">Read-only public address supplied by Sentinel's local execution record. No browser signing authority implied.</p>:<WalletControls/>}
+     <small>{agenticAddress??(wallet.ready?wallet.address:'Connect a BSC mainnet wallet or open a verified Agentic Wallet receipt to observe positions.')}</small>
     </div>
-    <div className="desk-watch-checklist"><div><span>01 / BSC ACCOUNT</span><b>{wallet.ready?'CONNECTED':wallet.address?'WRONG NETWORK':'WAITING'}</b></div><div><span>02 / SELECTED BASKET</span><b>{basket.length===0?'NOT SET':basket.length+' LEGS'}</b></div><div><span>03 / ISSUER MARKS</span><b>{feed==='live'?(snapshot?.source==='first-party-production-readonly'?'RELAYED LIVE':'LIVE SOURCE'):feed.toUpperCase()}</b></div><div><span>04 / EXECUTION</span><b>LOCKED</b></div></div>
+    <div className="desk-watch-checklist"><div><span>01 / BSC ACCOUNT</span><b>{agenticAddress?'PUBLIC OBSERVATION':wallet.ready?'CONNECTED':wallet.address?'WRONG NETWORK':'WAITING'}</b></div><div><span>02 / SELECTED BASKET</span><b>{basket.length===0?'NOT SET':basket.length+' LEGS'}</b></div><div><span>03 / ISSUER MARKS</span><b>{feed==='live'?(snapshot?.source==='first-party-production-readonly'?'RELAYED LIVE':'LIVE SOURCE'):feed.toUpperCase()}</b></div><div><span>04 / EXECUTION</span><b>LOCKED</b></div></div>
     <button className="desk-watch-refresh" type="button" disabled={!ready||busy} onClick={()=>setManualRun(n=>n+1)}><RefreshCw size={16} className={busy?'desk-spin':''}/>{busy?'Reading chain…':'Refresh BSC snapshot'}<ArrowRight size={16}/></button>
     {error&&<p className="desk-watch-error" role="alert">{error} The prior snapshot, if present, will expire rather than being treated as live.</p>}
     <p className="desk-watch-rail-note">Silent refresh every 30 seconds only while this page is visible, plus refresh on focus. If the feed, wallet, RPC or contract read fails, no allocation or rebalance is certified.</p>

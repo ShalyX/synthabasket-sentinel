@@ -69,7 +69,7 @@ export default function BasketStudio(){
     <div className="desk-rail-assessment"><span>DESK NOTE / 03</span><h3>Allocation is not execution.</h3><p>Each leg still needs a fresh venue quote, issuer availability, reasonable price impact, and an explicit user-authorized transaction. That's the next room.</p><div className="desk-rail-rules"><p><Check size={15}/> Fixed allocation totaling 100%</p><p><Check size={15}/> Issuer contract selection is explicit</p><p><Info size={15}/> Liquidity and fee verification pending</p></div></div>
     <button type="button" className="desk-button-accent desk-big-next" disabled={!canReview} onClick={()=>router.push('/sentinel/review')}>Continue to execution review <ArrowRight size={18}/></button>
     {!canReview&&<p className="desk-next-note">{feed!=='live'?'A live Binance market feed is required to verify current routes.':basket.length===0?'Select at least one stock.':'Each selected asset needs a verified contract and a $1 minimum leg.'}</p>}
-    <Link href="/sentinel/markets" className="desk-rail-back"><ArrowLeft size={14}/> Return to market index</Link>
+    <Link href="/sentinel/agent" className="desk-rail-back">Live Binance Agentic Wallet execution <ArrowRight size={14}/></Link><Link href="/sentinel/markets" className="desk-rail-back"><ArrowLeft size={14}/> Return to market index</Link>
    </aside>
   </div>
  </div>;

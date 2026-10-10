@@ -79,7 +79,7 @@ export default function ExecutionReview(){
      })}
      <div className="desk-receipt-footer"><span>SIMULATION IS NOT EXECUTION</span><span>0 ORDERS SENT / 0 APPROVALS / 0 SIGNATURES</span></div>
     </div>
-    <div className="desk-review-after"><LockKeyhole size={21}/><p><strong>The review is not the finish line.</strong> Next, build actual BSC swap calldata and ask the Transaction API to simulate each proposed leg. A simulation still cannot authorize spending; live execution requires eligible access, balances, exact approvals and explicit wallet signatures.</p></div><Link href="/sentinel/execute" className="desk-sim-link-advance">Continue to real transaction simulation <ArrowRight size={18}/></Link>
+    <div className="desk-review-after"><LockKeyhole size={21}/><p><strong>The review is not the finish line.</strong> Next, build actual BSC swap calldata and ask the Transaction API to simulate each proposed leg. A simulation still cannot authorize spending; live execution requires eligible access, balances, exact approvals and explicit wallet signatures.</p></div><Link href="/sentinel/execute" className="desk-sim-link-advance">Continue to real transaction simulation <ArrowRight size={18}/></Link><Link href="/sentinel/agent" className="desk-sim-link-advance">Execute via local Binance Agentic Wallet <ArrowRight size={18}/></Link>
    </section>
    <aside className="desk-review-rail">
     <div className="desk-review-rail-heading"><span>POLICY ENGINE / V1</span><h2>Four reasons<br/>to say no.</h2><p>Deterministic checks. Not a deployed Agentic Wallet or autonomous Agent Studio agent.</p></div>
