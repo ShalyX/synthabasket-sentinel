@@ -31,7 +31,7 @@ The main builder no longer silently collapses every ticker to a preferred wrappe
 - Runs only on the user's computer at `127.0.0.1:8787`; the hosted app never receives the Binance wallet session or pairing secret.
 - Requires fresh preview, observed funding, an approval checkbox and the phrase `EXECUTE BASKET`.
 - Journals before submission, stops on ambiguity and advances only after Binance order status plus independent BSC settlement evidence.
-- M13 records that a manual $1 NVDAB Agentic Wallet trade settled before this bridge; a Sentinel-initiated live multi-leg bridge purchase is still pending user-approved smoke testing.
+- M13 records that a manual $1 NVDAB Agentic Wallet trade settled before this bridge. On October 10, the owner also ran a separate production Sentinel-initiated, one-leg $1 NVDAB bridge smoke test; the deployed UI reported `SETTLED_VERIFIED` and terminal basket phase `FINISHED`.
 
 ### Direct browser wallet
 
@@ -51,9 +51,13 @@ Direct browser authorization is default-off at the server. Production must expli
 - Next production build and TypeScript checks pass.
 - Desktop and 390px mobile browser runs show explicit wrapper controls and both purchase lanes.
 - With the live execution flag and pinned allowlists enabled locally, a real authenticated Binance $1 NVDA/bStocks quote/build reached `APPROVAL_REQUIRED` with exact USDT approval calldata for the observed `0xb444…` router/spender. No transaction was signed or broadcast during this verification.
+- PR #3 was merged to `main`, GitHub CI passed, and the production Vercel deployment and signed market feed returned HTTP 200.
+- The reviewed production router, spender and selector allowlists were enabled. A separate no-signature production probe returned the expected exact-size $1 NVDAB `APPROVAL_REQUIRED` action.
+- The owner then completed a production browser-wallet smoke test. The owner reported that Sentinel verified the exact-size approval, signed $1 NVDAB swap, issuer-token delivery and USDT debit, ending at `PURCHASE_VERIFIED`.
+- The owner separately ran the production local Agentic bridge in deliberately enabled live mode with a fresh one-leg $1 NVDAB preview. The owner reported terminal leg state `SETTLED_VERIFIED` and basket phase `FINISHED`.
 
-## Still requires the owner
+The two transaction results above are **owner-confirmed production evidence** from Sentinel's wallet-owned interfaces. No pairing secret, private wallet session, raw balance or signing material was collected. Unless public transaction hashes are added separately, this document does not claim that the repository maintainer independently replayed those private wallet sessions.
 
-- Enable the direct-browser environment flag and reviewed allowlists in the production deployment if accepting that provider-trust boundary.
-- Run one deliberately funded, user-approved end-to-end browser swap and one Sentinel-initiated Agentic bridge basket smoke test before claiming those deployed paths have settled live purchases.
+## Remaining non-product deliverables
+
 - Video, submission and personal DevEx-report work intentionally remain outside this product milestone.
