@@ -85,7 +85,6 @@ export default function ExecutionLab(){
  const [budget,setBudget]=useState(25);
  const receiver=wallet.address??'';
  const [running,setRunning]=useState(false),[observations,setObservations]=useState<Observation[]>([]);
- const [runId,setRunId]=useState(0);
  const [orchestration,setOrchestration]=useState<Rehearsal|null>(null);
  const [recoveryError,setRecoveryError]=useState<string|null>(null);
  const [evidenceKey,setEvidenceKey]=useState<string|null>(null);
@@ -136,7 +135,7 @@ export default function ExecutionLab(){
  useEffect(()=>{
   runAbort.current?.abort();
   fundingAbort.current?.abort();
-  setObservations([]);setBalanceCheck(null);setBalanceError(null);setOrchestration(null);setRecoveryError(null);
+  setObservations([]);setEvidenceKey(null);setBalanceCheck(null);setBalanceError(null);setOrchestration(null);setRecoveryError(null);
  },[operationKey]);
  useEffect(()=>{
   setNowMs(Date.now());
@@ -179,7 +178,6 @@ export default function ExecutionLab(){
   const controller=new AbortController();
   runAbort.current=controller;runRef.current=true;
   setRunning(true);setEvidenceKey(key);setObservations([]);setRecoveryError(null);
-  setRunId(n=>n+1);
   try{
    const result=await rehearse(planned.value,async(leg,address,signal)=>{
     const response=await fetch('/api/sentinel/simulate',{
@@ -378,7 +376,7 @@ export default function ExecutionLab(){
     <div className="desk-sim-rails"><div><span>CHAIN</span><strong>BSC / 56</strong></div><div><span>INPUT TOKEN</span><strong>USDT / 18 DECIMALS</strong></div><div><span>MAX PER LEG</span><strong>$25 USDT</strong></div><div><span>MAX BASKET</span><strong>$50 USDT</strong></div><div><span>SLIPPAGE LIMIT</span><strong>0.50%</strong></div><div><span>PRICE IMPACT LIMIT</span><strong>2.00%</strong></div><div><span>SUPPORTED PATH</span><strong>LIQUIDMESH SWAP</strong></div></div>
     <button type="button" className="desk-sim-run" onClick={()=>void runSimulation()} disabled={running||!!issue||!canRehearse}>
      {running?<RefreshCw size={17} className="desk-spin"/>:<ShieldAlert size={18}/>}
-     {running?'Planning & rehearsing actual swaps…':runId>0?'Rehearse all legs with fresh quotes':'Build & simulate basket'}
+     {running?'Planning & rehearsing actual swaps…':currentRun?'Rehearse all legs with fresh quotes':'Build & simulate basket'}
      <ArrowRight size={17}/>
     </button>
     {issue&&<p className="desk-sim-note" role="status">{issue}</p>}
